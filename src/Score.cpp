@@ -31,13 +31,11 @@ float conservidue_pair_score(const Conservidue & c1, const Conservidue & c2) {
 		vector<char>::const_iterator charit2;
 		for (charit2 = c2_chars.begin(); charit2 != c2_chars.end(); charit2++) {
 			
-			const char char1 = *charit1;
-			const char char2 = *charit2;
-			const float weight1 = c1.residue_counts[char1];
-			const float weight2 = c2.residue_counts[char2];
+			float weight1 = c1.residue_counts.find(*charit1)->second;
+			float weight2 = c2.residue_counts.find(*charit2)->second;
 		
 			float sequence_count = weight1 * weight2;
-			float bit_score = blosum62.get_score(char1, char2);
+			float bit_score = blosum62.get_score(*charit1, *charit2);
 
 			answer += sequence_count * bit_score;
 		}
