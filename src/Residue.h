@@ -2,6 +2,7 @@
 #define __RESIDUE_H__
 
 #include <string>
+#include <iostream>
 
 using namespace std;
 
@@ -26,8 +27,11 @@ protected:
 	Macromolecule p_macromolecule;
 	const BioSequence * p_sequence_pointer;
 public:
+	unsigned int sequence_residue_index; // Actual index in parent sequence
+
 	Residue() {
 		p_sequence_pointer = NULL;
+		sequence_residue_index = 0;
 	}
 	// Need accessor functions for variables so "virtual" functionality will work
     virtual const char & one_letter_code() const {return p_one_letter_code;}
@@ -35,10 +39,22 @@ public:
 	const BioSequence * sequence_pointer() const {return p_sequence_pointer;}
 	void set_sequence_pointer(BioSequence * p) {p_sequence_pointer = p;}
 	int & residue_number() {return p_residue_number;}
+	int get_residue_number() const {return p_residue_number;}
 	Macromolecule & macromolecule() {return p_macromolecule;}
 		
 	virtual bool is_gap() const {return false;} // only GapResidue can be a gap
 	virtual Residue * new_clone() const = 0; // so subclasses can send the correct pointer type
+
+	ostream & print_debug(ostream & os, unsigned int indent_size = 0) const {
+		string indent = "";
+		for(unsigned int i=0;i<indent_size;i++)indent += " ";
+		
+		os << indent << "residue pointer = " << this << endl;
+		os << indent << "residue number = " << p_residue_number << endl;
+		os << indent << "one letter code = " << one_letter_code() << endl;
+			
+		return os;
+	}
 };
 
 ////////// Gap instance class //////////////
@@ -404,5 +420,7 @@ public:
 	Glutambiguous * new_clone() const {return new Glutambiguous(*this);}
 	const static string name;
 };
+
+ostream & operator<<(ostream & os, const Residue & residue);
 
 #endif
