@@ -28,6 +28,12 @@
 // $Header$
 //
 // $Log$
+// Revision 1.3  2004/05/22 19:59:21  cmbruns
+// Change name of print routine to print_fasta
+// In BioSequence istream<<:
+//   change free() to delete() !!!!
+//   note explicit gap residues in assigning sequence numbering
+//
 // Revision 1.2  2004/05/19 00:36:48  cmbruns
 // Added print_debug routine for BioSequence object
 // Call residue operator<< for output, rather than one_letter_code() routine directly.
@@ -82,15 +88,15 @@ ostream & BioSequence::print_debug(ostream & os, unsigned int indent_size) const
 	return os;
 }
 
-ostream & BioSequence::print(ostream & os) const {
+ostream & BioSequence::print_fasta(ostream & os) const {
     const BioSequence & sequence = *this;
-    int i;
+
     os << ">";
     os << get_id();
     os << "\t";
     os << get_title();
     os << endl;
-    for (i = 0; i < length(); ++i) {
+    for (unsigned int i = 0; i < length(); ++i) {
 		if ((i > 0) && (i % CHARACTERS_PER_LINE == 0))
 			os << endl; // end of line every CHARACTERS_PER_LINE characters
 		os << sequence[i];
@@ -143,23 +149,32 @@ istream & operator>> (istream & is, BioSequence & s) {
   while ((this_char != '>') && is.good()) {
     if (this_char != '\n') { // get rest of line if not at start of line
 
-      residue_number ++;
-		AminoAcid * res_ptr = new_protein_residue(this_char);
-		res_ptr->residue_number() = residue_number;
-      s.add_residue(*res_ptr);
-	  free(res_ptr);
+		Residue * res_ptr = new_protein_residue(this_char);
+		if (res_ptr->is_gap()) // Gap
+			res_ptr->residue_number() = -1;
+		else { // Not a gap
+			residue_number ++;
+			res_ptr->residue_number() = residue_number;
+		}
+		s.add_residue(*res_ptr);
+		delete res_ptr;
 
-      is.getline(line_buffer, MAX_LINE_LENGTH);
-      int i;
-      for (i = 0; line_buffer[i] != '\0'; ++i) {
+		is.getline(line_buffer, MAX_LINE_LENGTH);
+		int i;
+		for (i = 0; line_buffer[i] != '\0'; ++i) {
 
-        if (i >= MAX_LINE_LENGTH) break;
-        residue_number ++;
-		Residue * res_ptr = new_protein_residue(line_buffer[i]);
-		res_ptr->residue_number() = residue_number;
-        s.add_residue(*res_ptr);
-		free(res_ptr);
-      }
+			if (i >= MAX_LINE_LENGTH) break;
+
+			res_ptr = new_protein_residue(line_buffer[i]);
+			if (res_ptr->is_gap()) // Gap
+				res_ptr->residue_number() = -1;
+			else { // Not a gap
+				residue_number ++;
+				res_ptr->residue_number() = residue_number;
+			}
+			s.add_residue(*res_ptr);
+			delete res_ptr;
+		}
     }
     this_char = is.get();
   }
@@ -268,7 +283,7 @@ bool BioSequence::empty() const {
 }
 
 ostream & operator<<(ostream & os, const BioSequence & s) {
-  s.print(os);
+  s.print_fasta(os);
   return os;
 }
 
