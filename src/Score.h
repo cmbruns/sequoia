@@ -4,6 +4,6 @@
 #include "SequenceAlignment.h"
 
 // return bit score of aligning two conservidues
-float conservidue_score(const Conservidue & c1, const Conservidue & c2);
+float conservidue_pair_score(const Conservidue & c1, const Conservidue & c2);
 
 #endif
