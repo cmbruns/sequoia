@@ -1,7 +1,15 @@
+// TODO - UPGMA tree alignment
+// TODO - updated comparison matrix
+// TODO - closer sum of pairs target
+// TODO - structure alignment
+// TODO - threading
+// TODO - address all TODO, FIXME, and ALERT comments
+// TODO - make fast version of AlignmentScore
+
 #include <iostream>
 #include <fstream>
 
-// #include "AlignmentMethod.h"
+// #include "SequenceAlignment.h"
 // #include "BioSequence.h"
 // #include "Exceptions.h"
 
