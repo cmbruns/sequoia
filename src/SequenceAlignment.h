@@ -28,6 +28,12 @@
 // $Id$
 // $Header$
 // $Log$
+// Revision 1.7  2004/06/14 16:57:49  cmbruns
+// Created update_begin_conservidue subroutine, but it should probably only be called in one place
+// Improved logic for GAP_DIVERGENCE case in sequence_pair_score
+// Created delta_sum_of_pairs_score for easier debugging in later progressive alignment steps
+// Incorporated some new Conservidue members in set_weight() subroutine
+//
 // Revision 1.6  2004/06/04 19:31:10  cmbruns
 // Updated GPL header
 //
@@ -63,15 +69,16 @@
 #include <iostream>
 #include <fstream>
 #include "BioSequence.h"
-#include "AlignmentMethod.h"
+// #include "AlignmentMethod.h"
 #include "Exceptions.h"
 // #include "GapModel.h"
 #include "Conservidue.h"
 #include "PDBEntry.h"
+#include "ConservidueAlignment.h"
 
 using namespace std; // So STL stuff will work in the traditional way
 
-// TODO - eliminates sequences from SequenceAlignment
+// TODO - eliminate sequences from SequenceAlignment
 // TODO - eliminate end gap parameters from SequenceAlignment (leave in BioSequence)
 
 // Alignment space determines the alignment method.
@@ -94,6 +101,7 @@ class SequenceAlignment {
 	friend class ConservidueAlignment;
 	friend class Conservidue;
 protected:
+	// TODO - eliminate these gap factors, and let them propagate from BioSequence
 	// Scale scores of end gaps by this amount, but not extensions
 	double left_gap_factor; // coefficient for left end gaps, other than extensions
 	double right_gap_factor; // coefficient for right end gaps, other than extensions
@@ -112,8 +120,13 @@ protected:
 								 // as opposed to sum of pairs score
 
 public:
+
 	void add_conservidue(const Conservidue & c, unsigned int sequence_index_offset = 0);
 	void add_sequence(const BioSequence & sequence);
+
+	// I keep changing my mind about the contents of the begin conservidue, so make a function to take care of it
+	void update_begin_conservidue();
+	
 	SequenceAlignment & initialize_from_pdb_protein(const PDBChain & chain);
 	// void add_pdb_protein(PDBChain chain);
 	void add_sequence_automatic(const BioSequence & sequence);	
@@ -158,29 +171,44 @@ public:
 
 			c.weighted_sequence_count *= factor; // sum over all sequence weights with non-gaps
 
-			c.weighted_internal_gap_count *= factor;
-			c.weighted_left_end_gap_count *= factor;
-			c.weighted_right_end_gap_count *= factor;
-			c.weighted_left_end_sequence_count *= factor;  // count of initial residues
-			c.weighted_right_end_sequence_count *= factor; // count of final residues
-			c.weighted_internal_sequence_count *= factor; // count of internal residues			
-			c.gap_open_count *= factor; // count of internal residues			
-			c.gap_close_count *= factor; // count of internal residues			
+			c.scaled_extension_gap_count *= factor;
+			c.scaled_gap_count *= factor;
+			c.scaled_gap_open_count *= factor;
+			c.scaled_gap_close_count *= factor;
+			c.scaled_extension_left_sequence_count *= factor;
+			c.scaled_left_sequence_count *= factor;
+			c.scaled_extension_right_sequence_count *= factor;
+			c.scaled_right_sequence_count *= factor;
+			c.scaled_extension_gap_open_count *= factor;
+			c.scaled_extension_gap_close_count *= factor;
+			c.scaled_gap_deletion_penalty *= factor;
+			c.scaled_gap_deletion_penalty_opens *= factor;
+			
 			c.gap_opening_penalty *= factor; // -log2 probability of loop beginning with this Conservidue
 			c.gap_closing_penalty *= factor; // -log2 probability of loop before this Conservidue
 			c.gap_deletion_penalty *= factor; // -log2 probability of gap after this Conservidue
 
 			c.p_gap_parameter.set_weight(c.weighted_sequence_count);
 			
+			// residue counts
 			map<char, float>::iterator res_count;
 			for (res_count = c.residue_counts.begin(); 
 				 res_count != c.residue_counts.end();
 				 res_count ++) {
 				res_count->second *= factor;
 			}
+			
+			// TODO - residue score counts
+			vector<float>::iterator rs_count;
+			for (rs_count = c.residue_score_counts.begin();
+				 rs_count != c.residue_score_counts.end();
+				 rs_count ++) {
+				*rs_count *= factor;
+			}
 		}
 	}
 	AlignmentScore sum_of_pairs_score(AlignmentGranularity granularity = default_granularity) const;
+	AlignmentScore delta_sum_of_pairs_score(unsigned int border_sequence, AlignmentGranularity granularity = default_granularity) const;
 	SequenceAlignment & initialize_from_biosequence(const BioSequence & seq0);
 	
 	// need assignment operator and copy constructor so that conservidue.parent_alignment pointers are properly set
@@ -188,7 +216,16 @@ public:
 	SequenceAlignment();
 	SequenceAlignment(const SequenceAlignment & alignment2);	
 	SequenceAlignment(const BioSequence & seq);
+	SequenceAlignment(const char * seq_string);
 };
+
+// Basic sequence alignment rountine, for a single step of progressive alignment
+// This is a wrapper for SequenceAlignment::align()
+SequenceAlignment align_profiles(
+								 const SequenceAlignment & seq1, 
+								 const SequenceAlignment & seq2,
+								 AlignmentGranularity granularity = default_granularity
+								 );
 
 istream & operator>>(istream & is, SequenceAlignment & alignment);
 ostream & operator<<(ostream & os, const SequenceAlignment & s);
