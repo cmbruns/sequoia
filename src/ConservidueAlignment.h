@@ -50,7 +50,7 @@ public:
 	
 	// Set default alignment method here
 	AlignmentGranularity() :
-		align_global(true), use_divergence(NO_DIVERGENCE), branch_alignment(false)
+		align_global(true), use_divergence(GAP_DIVERGENCE), branch_alignment(false)
 	{}
 };
 

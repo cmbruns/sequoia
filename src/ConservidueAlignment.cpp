@@ -33,6 +33,12 @@
 //  $Header$
 //
 //  $Log$
+//  Revision 1.2  2004/06/14 16:49:57  cmbruns
+//  Removed open/delete penalties from upper-left cell.  These are now handled by profile scoring Conservidue subroutines
+//  Finalized switch from insert<->delete in left and top initialization.  I think Gusfield book was wrong.
+//  Replace computation of end gap factors here, with conservidue based ones in new Conservidue scoring functions.
+//  Made GAP_DIVERGENCE alignment behavior the default
+//
 //  Revision 1.1  2004/06/07 18:48:01  cmbruns
 //  Divided AlignmentMethod source code files into more object releated files DPMatrix.cpp/h and ConservidueAlignment.cpp/h
 //
@@ -233,6 +239,7 @@ void ConservidueAlignment::alignment_recurrence(AlignmentGranularity granularity
 	// if ((!conservidue1.is_initial) && (!conservidue2.is_initial)) {
 	else {
 		// compute pairwise alignment score S(i,j);
+		// TODO - move this out of recurrence and into SequenceAlignment::align
 		compute_pair_score();
 				
 		// align = V(i-1, j-1) + S(i,j) ;
@@ -272,9 +279,6 @@ void ConservidueAlignment::initialize_upper_left(AlignmentGranularity granularit
 		return;
 	}
 	
-	const SequenceAlignment & sequence1 = *(conservidue1->parent_alignment);
-	const SequenceAlignment & sequence2 = *(conservidue2->parent_alignment);
-
 	for (unsigned int i = 0; i < deletion.size(); i ++) { 
 		deletion[i].path_score.clear();
 		insertion[i].path_score.clear();
@@ -285,23 +289,9 @@ void ConservidueAlignment::initialize_upper_left(AlignmentGranularity granularit
 	
 	match.traceback_pointer = NULL;
 	
-	if (sequence1.left_gap_factor != 0) { // Initial end gap deletion score
-		for (unsigned int gseg = 0; gseg < deletion.size(); gseg++) {
-			AlignmentScore gap_score = 
-				conservidue1->gap_deletion_penalty * conservidue2->weighted_sequence_count +
-				conservidue2->gap_opening_penalty  * conservidue1->weighted_sequence_count+
-				conservidue2->gap_open_offset(gseg) * conservidue1->weighted_sequence_count; // piecewise penalty
-			deletion[gseg].path_score += sequence1.left_gap_factor * gap_score;
-		}
-	}
-	if (sequence2.left_gap_factor != 0) {
-		for (unsigned int gseg = 0; gseg < deletion.size(); gseg++) {
-			AlignmentScore gap_score = 
-				conservidue2->gap_deletion_penalty * conservidue1->weighted_sequence_count +
-				conservidue1->gap_opening_penalty * conservidue2->weighted_sequence_count +
-				conservidue1->gap_open_offset(gseg) * conservidue2->weighted_sequence_count; // piecewise penalty
-			insertion[gseg].path_score += sequence2.left_gap_factor * gap_score;
-		}
+	for (unsigned int gseg = 0; gseg < deletion.size(); gseg++) {
+		// deletion[gseg].path_score += conservidue1->initial_new_gap_opening_score(*conservidue2, gseg);
+		// insertion[gseg].path_score += conservidue2->initial_new_gap_opening_score(*conservidue1, gseg);
 	}
 }
 
@@ -327,15 +317,16 @@ void ConservidueAlignment::initialize_top_row(AlignmentGranularity granularity) 
 		return;
 	}
 	
-	const SequenceAlignment & sequence1 = *(conservidue1->parent_alignment);
 	const SequenceAlignment & sequence2 = *(conservidue2->parent_alignment);
 	
 	for (unsigned int gseg = 0; gseg < deletion.size(); gseg++) {
-		// deletion[gseg].path_score.match() = BAD_SCORE;
 		deletion[gseg].path_score.clear();
 		deletion[gseg].traceback_pointer = NULL;
 		insertion[gseg].path_score.clear();
 		insertion[gseg].traceback_pointer = NULL;
+
+		// deletion[gseg].path_score.match() = BAD_SCORE;
+		insertion[gseg].path_score.match() = BAD_SCORE; // test
 	}
 	match.path_score.match() = BAD_SCORE;
 	match.traceback_pointer = NULL;
@@ -344,6 +335,7 @@ void ConservidueAlignment::initialize_top_row(AlignmentGranularity granularity) 
 	
 	// find best predecessor of conservidue2 (only needed for non-branched alignments)
 	// INSERTION
+	if (0) { // test
 	for (unsigned int gseg = 0; gseg < deletion.size(); gseg++) {
 		const ConservidueAlignment * best_previous_cell = NULL;
 		AlignmentScore best_score(MATCH_SCORE, BAD_SCORE);
@@ -367,11 +359,9 @@ void ConservidueAlignment::initialize_top_row(AlignmentGranularity granularity) 
 		insertion[gseg].traceback_pointer = & (best_previous_cell->insertion[gseg]);
 		insertion[gseg].path_score = best_score;
 		
-		if (sequence1.left_gap_extension_factor != 0) {
-			AlignmentScore extension_penalty = 
-			sequence1.left_gap_extension_factor * conservidue2->gap_extension_penalty(gseg) * sequence1.weighted_sequence_count;
-			insertion[gseg].path_score += extension_penalty;
-		}
+		insertion[gseg].path_score += conservidue2->initial_gap_extension_score(*conservidue1, gseg);
+
+	}
 	}
 				
 	// DELETION - test
@@ -398,11 +388,7 @@ void ConservidueAlignment::initialize_top_row(AlignmentGranularity granularity) 
 		deletion[gseg].traceback_pointer = & (best_previous_cell->deletion[gseg]);
 		deletion[gseg].path_score = best_score;
 		
-		if (sequence1.left_gap_extension_factor != 0) {
-			AlignmentScore extension_penalty = 
-			sequence1.left_gap_extension_factor * conservidue2->gap_extension_penalty(gseg) * sequence1.weighted_sequence_count;
-			deletion[gseg].path_score += extension_penalty;
-		}
+		deletion[gseg].path_score += conservidue1->initial_gap_extension_score(*conservidue2, gseg);
 	}
 }
 
@@ -429,14 +415,15 @@ void ConservidueAlignment::initialize_left_column(AlignmentGranularity granulari
 	}
 	
 	const SequenceAlignment & sequence1 = *(conservidue1->parent_alignment);
-	const SequenceAlignment & sequence2 = *(conservidue2->parent_alignment);
 
 	for (unsigned int gseg = 0; gseg < deletion.size(); gseg++) {
-		// insertion[gseg].path_score.match() = BAD_SCORE;
 		deletion[gseg].path_score.clear();
 		deletion[gseg].traceback_pointer = NULL;
 		insertion[gseg].path_score.clear();
 		insertion[gseg].traceback_pointer = NULL;
+
+		// insertion[gseg].path_score.match() = BAD_SCORE;
+		deletion[gseg].path_score.match() = BAD_SCORE;
 	}
 	match.path_score.match() = BAD_SCORE;	
 	match.traceback_pointer = NULL;
@@ -445,6 +432,7 @@ void ConservidueAlignment::initialize_left_column(AlignmentGranularity granulari
 	
 	// find best predecessor of conservidue1 (only needed for non-branched alignments)
 	// DELETION
+	if (0) {
 	for (unsigned int gseg = 0; gseg < deletion.size(); gseg++) {
 		const ConservidueAlignment * best_previous_cell = NULL;
 		AlignmentScore best_score(MATCH_SCORE, BAD_SCORE);
@@ -468,10 +456,8 @@ void ConservidueAlignment::initialize_left_column(AlignmentGranularity granulari
 		deletion[gseg].traceback_pointer = & (best_previous_cell->deletion[gseg]);
 		deletion[gseg].path_score = best_score;
 	
-		if (sequence2.left_gap_extension_factor != 0) {
-			deletion[gseg].path_score += 
-			sequence2.left_gap_extension_factor * conservidue1->gap_extension_penalty(gseg) * sequence2.weighted_sequence_count;
-		}
+		deletion[gseg].path_score += conservidue1->initial_gap_extension_score(*conservidue2, gseg);
+	}
 	}
 
 	// INSERTION - test
@@ -498,10 +484,7 @@ void ConservidueAlignment::initialize_left_column(AlignmentGranularity granulari
 		insertion[gseg].traceback_pointer = & (best_previous_cell->insertion[gseg]);
 		insertion[gseg].path_score = best_score;
 		
-		if (sequence2.left_gap_extension_factor != 0) {
-			insertion[gseg].path_score += 
-			sequence2.left_gap_extension_factor * conservidue1->gap_extension_penalty(gseg) * sequence2.weighted_sequence_count;
-		}
+		insertion[gseg].path_score += conservidue2->initial_gap_extension_score(*conservidue1, gseg);
 	}
 
 }
@@ -511,24 +494,7 @@ void ConservidueAlignment::compute_pair_score() {
 	conservidue_score.clear();
 
 	// Contribution to score from matches
-	// conservidue_score += conservidue_pair_score(*conservidue1, *conservidue2);
 	conservidue_score += conservidue1->match_score(*conservidue2);
-
-	// Somehow the computation is correct without this code?
-	// Contribution to score from gap extension
-	// This is not correct for piecewise linear gap penalties
-	const SequenceAlignment & seq1 = *(conservidue1->parent_alignment);
-	const SequenceAlignment & seq2 = *(conservidue2->parent_alignment);
-
-	// TODO - precompute much of this in the conservidues
-	conservidue_score += conservidue1->gap_extension_penalty(0) *
-		(conservidue2->weighted_internal_gap_count +
-		 conservidue2->weighted_left_end_gap_count * seq2.left_gap_extension_factor +
-		 conservidue2->weighted_right_end_gap_count * seq2.right_gap_extension_factor) +
-		conservidue2->gap_extension_penalty(0) *
-		(conservidue1->weighted_internal_gap_count +
-		 conservidue1->weighted_left_end_gap_count * seq1.left_gap_extension_factor +
-		 conservidue1->weighted_right_end_gap_count * seq1.right_gap_extension_factor);		
 }
 
 // align = V(i-1, j-1) + S(i,j) ;
@@ -545,6 +511,17 @@ void ConservidueAlignment::assign_best_match_state(AlignmentGranularity granular
 	const SequenceAlignment & sequence1 = *(conservidue1->parent_alignment);
 	const SequenceAlignment & sequence2 = *(conservidue2->parent_alignment);
 	
+	// Perhaps a final end gap closing penalty is needed
+	AlignmentScore final_gap_close;
+	// TODO - merge these into a single function
+	final_gap_close = 
+		conservidue1->final_match_gap_closing_score(*conservidue2, 0) +
+		conservidue2->final_match_gap_closing_score(*conservidue1, 0);
+	AlignmentScore initial_gap_open;
+	initial_gap_open = 
+		conservidue1->initial_match_gap_opening_score(*conservidue2, 0) +
+		conservidue2->initial_match_gap_opening_score(*conservidue1, 0);
+	
 	// examine all predecessor pairs
 	vector<ConserviduePredecessor>::const_iterator prev_res1;
 	vector<ConserviduePredecessor>::const_iterator prev_res2;
@@ -556,11 +533,6 @@ void ConservidueAlignment::assign_best_match_state(AlignmentGranularity granular
 		const Conservidue * previous_conservidue1 = & sequence1[cp1.predecessor_conservidue];
 		AlignmentScore transition_score1 = cp1.transition_score;
 		
-		// Beware of special case of closing an initial end gap
-		double end_gap_factor1 = 1.0;
-		if (previous_conservidue1->is_initial)
-			end_gap_factor1 = conservidue1->parent_alignment->left_gap_factor;
-		
 		for (prev_res2 = conservidue2->predecessors.begin();
 			 prev_res2 != conservidue2->predecessors.end();
 			 prev_res2 ++) {
@@ -570,22 +542,40 @@ void ConservidueAlignment::assign_best_match_state(AlignmentGranularity granular
 			AlignmentScore transition_score2 = cp2.transition_score;
 
 			// score common to all paths
-			AlignmentScore match_score = transition_score1 + transition_score2 + conservidue_score;
+			AlignmentScore match_score = 
+				transition_score1 + 
+				transition_score2 + 
+				conservidue_score +
+				final_gap_close +
+				initial_gap_open +
+				// Contribution to score from gap extension
+				// This is not correct for piecewise linear gap penalties, note gseg argument
+				//conservidue_score += conservidue1->match_gap_extension_score(*conservidue2, 0);
+				conservidue1->match_gap_extension_score(*conservidue2, 0);
+
+			AlignmentScore match_open1_score =
+				conservidue1->match_gap_opening_score(*conservidue2, 0);
+			AlignmentScore match_open2_score =
+				conservidue2->match_gap_opening_score(*conservidue1, 0);
+
+			AlignmentScore match_close1_score =
+				conservidue1->match_gap_closing_score(*previous_conservidue2, 0);
+			AlignmentScore match_close2_score =
+				conservidue2->match_gap_closing_score(*previous_conservidue1, 0);
 			
 			const ConservidueAlignment * previous_cell = get_cell(previous_conservidue1, previous_conservidue2);
 			AlignmentScore test_score;
 			const AlignmentStep * test_step;
 
-			// Beware of special case of closing an initial end gap
-			double end_gap_factor2 = 1.0;
-			if (previous_conservidue2->is_initial)
-				end_gap_factor2 = conservidue2->parent_alignment->left_gap_factor;
-			
 			// A) match to match
 			// G(i-1, j-1) + S(i,j) 
 			test_step = & previous_cell->match;
 			test_score = test_step->path_score + 
-				match_score;
+				match_score +
+				match_open1_score +
+				match_open2_score +
+				match_close1_score +
+				match_close2_score;
 			if ((test_score > best_score) || (best_score == BAD_SCORE)) {
 				best_score = test_score;
 				subject_step->path_score = test_score;
@@ -595,19 +585,20 @@ void ConservidueAlignment::assign_best_match_state(AlignmentGranularity granular
 			// one insertion/deletion/divergence step for each segment in gap model
 			for (unsigned int gseg = 0; gseg < deletion.size(); gseg++) {
 
-				AlignmentScore close_score1 = end_gap_factor1 * 
-				(previous_conservidue2->gap_closing_penalty  * conservidue1->weighted_sequence_count +
-				 previous_conservidue2->gap_close_offset(gseg) * conservidue1->weighted_sequence_count);
+				if (granularity.use_divergence == GAP_DIVERGENCE) {
+					match_open1_score.clear();
+					match_open2_score.clear();
+				}
 				
-				AlignmentScore close_score2 = end_gap_factor2 * 
-					(previous_conservidue1->gap_closing_penalty  * conservidue2->weighted_sequence_count +
-					 previous_conservidue1->gap_close_offset(gseg) * conservidue2->weighted_sequence_count);
+				AlignmentScore new_close_score1 = conservidue1->new_gap_closing_score(*previous_conservidue2, gseg);
+				AlignmentScore new_close_score2 = conservidue2->new_gap_closing_score(*previous_conservidue1, gseg); 
 				
 				// B) match to deletion
 				// 	E(i-1, j-1) - Wc2(j-1) + S(i,j)
 				test_step = & previous_cell->deletion[gseg];
 				test_score = test_step->path_score + 
-					close_score1 +
+					new_close_score1 +
+					match_open2_score +
 					match_score;
 				if ((test_score > best_score) || (best_score == BAD_SCORE)) {
 					best_score = test_score;
@@ -619,7 +610,8 @@ void ConservidueAlignment::assign_best_match_state(AlignmentGranularity granular
 				// 	F(i-1, j-1) - Wc1(i-1) + S(i,j)
 				test_step = & previous_cell->insertion[gseg];
 				test_score = test_step->path_score + 
-					close_score2 +
+					new_close_score2 +
+					match_open1_score +
 					match_score;
 				if ((test_score > best_score) || (best_score == BAD_SCORE)) {
 					best_score = test_score;
@@ -632,8 +624,10 @@ void ConservidueAlignment::assign_best_match_state(AlignmentGranularity granular
 				if (granularity.use_divergence == PAIR_DIVERGENCE) {
 					test_step = & previous_cell->divergence[gseg];
 					test_score = test_step->path_score + 
-						0.5 * close_score1 +
-						0.5 * close_score2 +
+						0.5 * new_close_score1 +
+						0.5 * new_close_score2 +
+						0.5 * match_open1_score +
+						0.5 * match_open2_score +
 						match_score;
 					if ((test_score > best_score) || (best_score == BAD_SCORE)) {
 						best_score = test_score;
@@ -661,14 +655,6 @@ void ConservidueAlignment::assign_best_match_state(AlignmentGranularity granular
 // } - We2(j)
 void ConservidueAlignment::assign_best_deletion_state(AlignmentGranularity granularity) {
 	const SequenceAlignment & sequence2 = *(conservidue2->parent_alignment);
-	const SequenceAlignment & sequence1 = *(conservidue1->parent_alignment);
-	
-	double end_gap_factor = 1.0; // In case end gaps are free
-	double end_gap_extension_factor = 1.0; // In case end gaps are free
-	if (conservidue1->is_final) {
-		end_gap_factor = conservidue1->parent_alignment->right_gap_factor;
-		// end_gap_extension_factor = conservidue1->parent_alignment->right_gap_extension_factor;
-	}
 	
 	// One deletion step for each segment in the piecewise linear gap model
 	for (unsigned int gseg = 0; gseg < deletion.size(); gseg++) {	
@@ -685,36 +671,26 @@ void ConservidueAlignment::assign_best_deletion_state(AlignmentGranularity granu
 			const Conservidue * previous_conservidue2 = & sequence2[cp2.predecessor_conservidue];
 			AlignmentScore transition_score2 = cp2.transition_score;
 			
-			// Perhaps a final end gap closing penalty is needed
+			// A final end gap closing penalty may be needed
 			AlignmentScore final_gap_close;
-			if (conservidue1->is_final && conservidue2->is_final) {
-				final_gap_close = conservidue2->gap_closing_penalty *  conservidue1->weighted_sequence_count * end_gap_factor +
-				conservidue2->gap_close_offset(gseg) * conservidue1->weighted_sequence_count * end_gap_factor;
-			}
+			final_gap_close = conservidue1->final_new_gap_closing_score(*conservidue2, gseg);
+			AlignmentScore initial_gap_open;
+			initial_gap_open = conservidue1->initial_new_gap_opening_score(*conservidue2, gseg);
 			
 			const ConservidueAlignment * previous_cell = get_cell(conservidue1, previous_conservidue2);
 			AlignmentScore test_score;
 			const AlignmentStep * test_step;
 
 			// common to all scores
-			double gap_depth = 
-				conservidue1->weighted_internal_sequence_count +
-				conservidue1->weighted_left_end_sequence_count + // this is not a left end gap!
-				conservidue1->weighted_right_end_sequence_count * sequence1.right_gap_extension_factor +
-
-				conservidue1->weighted_internal_gap_count +
-				conservidue1->weighted_left_end_gap_count * sequence1.left_gap_extension_factor +
-				conservidue1->weighted_right_end_gap_count * sequence1.right_gap_extension_factor;
 			AlignmentScore deletion_score = transition_score2 + 
-				final_gap_close +   
-				conservidue2->gap_extension_penalty(gseg) * end_gap_extension_factor * gap_depth;
+				final_gap_close +
+				initial_gap_open +
+				conservidue1->new_gap_extension_score(*conservidue2, gseg);
 			
 			// common to gap opening scores
-			AlignmentScore opening_score = deletion_score + end_gap_factor * 
-				(conservidue1->gap_deletion_penalty * conservidue2->weighted_sequence_count +
-				 conservidue2->gap_opening_penalty * conservidue1->weighted_sequence_count +
-				 conservidue2->gap_open_offset(gseg) * conservidue1->weighted_sequence_count);			
-						
+			AlignmentScore opening_score = deletion_score +
+				conservidue1->new_gap_opening_score(*conservidue2, gseg);
+			
 			// A) deletion after deletion
 			// 	E(i, j-1) - We2(j)
 			test_step = & previous_cell->deletion[gseg];
@@ -731,6 +707,8 @@ void ConservidueAlignment::assign_best_deletion_state(AlignmentGranularity granu
 			test_step = & previous_cell->match;
 			test_score = test_step->path_score + 
 				opening_score;
+			if (granularity.use_divergence != GAP_DIVERGENCE)
+				test_score += conservidue2->match_gap_closing_score(*conservidue1, gseg);
 			if ((test_score > best_score) || (best_score == BAD_SCORE)) {
 				best_score = test_score;
 				subject_step->path_score = test_score;
@@ -749,8 +727,7 @@ void ConservidueAlignment::assign_best_deletion_state(AlignmentGranularity granu
 			}
 			else {
 				test_score = test_step->path_score + 
-				conservidue1->gap_closing_penalty + // Not part of any end gap!
-				conservidue1->gap_close_offset(gseg) + // Not part of any end gap!
+				conservidue2->new_gap_closing_score(*conservidue1, gseg) + 
 				opening_score;
 			}
 			if ((test_score > best_score) || (best_score == BAD_SCORE)) {
@@ -764,7 +741,7 @@ void ConservidueAlignment::assign_best_deletion_state(AlignmentGranularity granu
 			if (granularity.use_divergence == PAIR_DIVERGENCE) {
 				test_step = & previous_cell->divergence[gseg];
 				test_score = test_step->path_score + 
-					end_gap_factor * conservidue1->gap_deletion_penalty  * conservidue2->weighted_sequence_count +
+					conservidue2->new_gap_deletion_score(*conservidue1, gseg) +
 					deletion_score;
 				if ((test_score > best_score) || (best_score == BAD_SCORE)) {
 					best_score = test_score;
@@ -784,14 +761,6 @@ void ConservidueAlignment::assign_best_deletion_state(AlignmentGranularity granu
 // } - We1(i)
 void ConservidueAlignment::assign_best_insertion_state(AlignmentGranularity granularity) {
 	const SequenceAlignment & sequence1 = *(conservidue1->parent_alignment);
-	const SequenceAlignment & sequence2 = *(conservidue2->parent_alignment);
-	
-	double end_gap_factor = 1.0; // In case end gaps are free
-	double end_gap_extension_factor = 1.0; // In case end gaps are free
-	if (conservidue2->is_final) {
-		end_gap_factor = conservidue2->parent_alignment->right_gap_factor;
-		// end_gap_extension_factor = conservidue2->parent_alignment->right_gap_extension_factor;
-	}
 	
 	for (unsigned int gseg = 0; gseg < deletion.size(); gseg++) {	
 		double best_score = BAD_SCORE;
@@ -799,10 +768,9 @@ void ConservidueAlignment::assign_best_insertion_state(AlignmentGranularity gran
 	
 		// Perhaps a final end gap closing penalty is needed
 		AlignmentScore final_gap_close;
-		if (conservidue1->is_final && conservidue2->is_final) {
-			final_gap_close = conservidue1->gap_closing_penalty * conservidue2->weighted_sequence_count * end_gap_factor +
-			conservidue1->gap_close_offset(gseg) * conservidue2->weighted_sequence_count * end_gap_factor;
-		}
+		final_gap_close = conservidue2->final_new_gap_closing_score(*conservidue1, gseg);
+		AlignmentScore initial_gap_open;
+		initial_gap_open = conservidue2->initial_new_gap_opening_score(*conservidue1, gseg);
 		
 		
 		// examine all predecessors
@@ -819,24 +787,14 @@ void ConservidueAlignment::assign_best_insertion_state(AlignmentGranularity gran
 			AlignmentScore test_score;
 			const AlignmentStep * test_step;
 		
-			// common to all scores
-			double gap_depth = 
-				conservidue2->weighted_internal_sequence_count +
-				conservidue2->weighted_left_end_sequence_count + // This is not a left end gap
-				conservidue2->weighted_right_end_sequence_count * sequence2.right_gap_extension_factor +
-
-				conservidue2->weighted_internal_gap_count +
-				conservidue2->weighted_left_end_gap_count * sequence2.left_gap_extension_factor +
-				conservidue2->weighted_right_end_gap_count * sequence2.right_gap_extension_factor;
 			AlignmentScore insertion_score = transition_score1 + 
-				final_gap_close +   
-				conservidue1->gap_extension_penalty(gseg) * end_gap_extension_factor * gap_depth;
+				final_gap_close +
+				initial_gap_open + 
+				conservidue2->new_gap_extension_score(*conservidue1, gseg);
 			
 			// common to gap opening scores
-			AlignmentScore opening_score = insertion_score + end_gap_factor * 
-				(conservidue2->gap_deletion_penalty * conservidue1->weighted_sequence_count +
-				 conservidue1->gap_opening_penalty * conservidue2->weighted_sequence_count +
-				 conservidue1->gap_open_offset(gseg) * conservidue2->weighted_sequence_count);			
+			AlignmentScore opening_score = insertion_score +
+				conservidue2->new_gap_opening_score(*conservidue1, gseg);
 			
 			// A) insertion after insertion
 			// 	F(i-1, j) - We1(j)
@@ -854,6 +812,8 @@ void ConservidueAlignment::assign_best_insertion_state(AlignmentGranularity gran
 			test_step = & previous_cell->match;
 			test_score = test_step->path_score + 
 				opening_score;
+			if (granularity.use_divergence != GAP_DIVERGENCE)
+				test_score += conservidue1->match_gap_closing_score(*conservidue2, gseg);
 			if ((test_score > best_score) || (best_score == BAD_SCORE)) {
 				best_score = test_score;
 				subject_step->path_score = test_score;
@@ -873,8 +833,7 @@ void ConservidueAlignment::assign_best_insertion_state(AlignmentGranularity gran
 				}
 				else {
 					test_score = test_step->path_score + 
-					conservidue2->gap_closing_penalty * conservidue1->weighted_sequence_count + // This one cannot be part of end gap!
-					conservidue2->gap_close_offset(gseg) * conservidue1->weighted_sequence_count + // This one cannot be part of end gap!
+					conservidue1->new_gap_closing_score(*conservidue2, gseg) +
 					opening_score;
 				}
 				if ((test_score > best_score) || (best_score == BAD_SCORE)) {
@@ -889,7 +848,7 @@ void ConservidueAlignment::assign_best_insertion_state(AlignmentGranularity gran
 			if (granularity.use_divergence == PAIR_DIVERGENCE) {
 				test_step = & previous_cell->divergence[gseg];
 				test_score = test_step->path_score + 
-					end_gap_factor * conservidue2->gap_deletion_penalty * conservidue1->weighted_sequence_count +
+					conservidue1->new_gap_deletion_score(*conservidue2, gseg) +
 					insertion_score;
 				if ((test_score > best_score) || (best_score == BAD_SCORE)) {
 					best_score = test_score;
@@ -915,18 +874,6 @@ void ConservidueAlignment::assign_best_divergence_state(AlignmentGranularity gra
 	const SequenceAlignment & sequence2 = *(conservidue2->parent_alignment);
 
 	// TODO - this method is inadequate to identify all end divergences
-	double final_gap_factor1 = 1.0; // In case end gaps are free
-	double final_gap_extension_factor1 = 1.0; // In case end gaps are free
-	double final_gap_factor2 = 1.0; // In case end gaps are free
-	double final_gap_extension_factor2 = 1.0; // In case end gaps are free
-	if (conservidue1->is_final) {
-		final_gap_factor1 = conservidue1->parent_alignment->right_gap_factor;
-		final_gap_extension_factor1 = conservidue1->parent_alignment->right_gap_extension_factor;
-	}
-	if (conservidue2->is_final) {
-		final_gap_factor2 = conservidue2->parent_alignment->right_gap_factor;
-		final_gap_extension_factor2 = conservidue2->parent_alignment->right_gap_extension_factor;
-	}
 
 	// examine all predecessor pairs
 	vector<ConserviduePredecessor>::const_iterator prev_res1;
@@ -954,22 +901,20 @@ void ConservidueAlignment::assign_best_divergence_state(AlignmentGranularity gra
 				
 				// Perhaps a final end gap closing penalty is needed
 				AlignmentScore final_gap_close;
-				if (conservidue1->is_final && conservidue2->is_final) {
-					final_gap_close = 
-						0.5 * final_gap_factor1 * 
-							(conservidue1->gap_closing_penalty * conservidue2->weighted_sequence_count +
-							 conservidue1->gap_close_offset(gseg)) * conservidue2->weighted_sequence_count +
-						0.5 * final_gap_factor2 * 
-							(conservidue2->gap_closing_penalty * conservidue1->weighted_sequence_count +
-							 conservidue2->gap_close_offset(gseg) * conservidue1->weighted_sequence_count);
-				}
+				final_gap_close = 
+					0.5 * conservidue2->final_new_gap_closing_score(*conservidue1, gseg) + 
+					0.5 * conservidue1->final_new_gap_closing_score(*conservidue2, gseg);
+				AlignmentScore initial_gap_open = 
+					0.5 * conservidue2->initial_new_gap_opening_score(*conservidue1, gseg) + 
+					0.5 * conservidue1->initial_new_gap_opening_score(*conservidue2, gseg);
 				
 				// score common to all paths
 				AlignmentScore divergence_score = transition_score1 + 
 					transition_score2 +
 					final_gap_close +
-					0.5 * final_gap_extension_factor1 * conservidue1->gap_extension_penalty(gseg) * conservidue2->weighted_sequence_count +
-					0.5 * final_gap_extension_factor2 * conservidue2->gap_extension_penalty(gseg) * conservidue1->weighted_sequence_count;
+					initial_gap_open +
+					0.5 * conservidue1->new_gap_extension_score(*conservidue2, gseg) +
+					0.5 * conservidue2->new_gap_extension_score(*conservidue1, gseg);
 				
 				const ConservidueAlignment * previous_cell = get_cell(previous_conservidue1, previous_conservidue2);
 				AlignmentScore test_score;
@@ -979,14 +924,8 @@ void ConservidueAlignment::assign_best_divergence_state(AlignmentGranularity gra
 				//	G(i-1, j-1) - Wo1(i)/2 + Wo2(j)/2 + We2(j)/2 + We1(i)/2
 				test_step = & previous_cell->match;
 				test_score = test_step->path_score + 
-					0.5 * final_gap_factor1 * 
-						(
-						 conservidue1->gap_opening_penalty * conservidue2->weighted_sequence_count +
-						 conservidue1->gap_open_offset(gseg) * conservidue2->weighted_sequence_count) +
-					0.5 * final_gap_factor2 * 
-						(
-						 conservidue2->gap_opening_penalty * conservidue1->weighted_sequence_count +
-						 conservidue2->gap_open_offset(gseg) * conservidue1->weighted_sequence_count) +
+					0.5 * conservidue2->new_gap_opening_score(*conservidue2, gseg) +
+					0.5 * conservidue1->new_gap_opening_score(*conservidue2, gseg) + 
 					divergence_score;
 				if ((test_score > best_score) || (best_score == BAD_SCORE)) {
 					best_score = test_score;
