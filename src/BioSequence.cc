@@ -28,8 +28,12 @@
 // $Header$
 //
 // $Log$
-// Revision 1.1  2004/05/11 20:26:12  cmbruns
-// Initial revision
+// Revision 1.2  2004/05/19 00:36:48  cmbruns
+// Added print_debug routine for BioSequence object
+// Call residue operator<< for output, rather than one_letter_code() routine directly.
+//
+// Revision 1.1.1.1  2004/05/11 20:26:12  cmbruns
+// Initial Max repository for latest sequoia
 //
 // Revision 1.7  2002/09/14 00:02:51  bruns
 // Added license header to most .cc files
@@ -64,6 +68,20 @@ void BioSequence::set_id(const string & s) {private_id = s;}
 void BioSequence::set_title(const string & s) {private_title = s;}
 // void BioSequence::set_sequence(const string & s) {private_sequence = s;}
 
+ostream & BioSequence::print_debug(ostream & os, unsigned int indent_size) const {
+	string indent = "";
+	for(unsigned int i=0;i<indent_size;i++)indent += " ";
+	
+	os << indent << "sequence pointer = " << this << endl;
+	os << indent << "Residues:" << endl;
+	for (unsigned int i = 0; i < private_sequence.size(); i++) {
+		private_sequence[i]->print_debug(os, indent_size + 2);
+	}
+	os << endl;
+
+	return os;
+}
+
 ostream & BioSequence::print(ostream & os) const {
     const BioSequence & sequence = *this;
     int i;
@@ -75,7 +93,7 @@ ostream & BioSequence::print(ostream & os) const {
     for (i = 0; i < length(); ++i) {
 		if ((i > 0) && (i % CHARACTERS_PER_LINE == 0))
 			os << endl; // end of line every CHARACTERS_PER_LINE characters
-		os << sequence[i].one_letter_code();
+		os << sequence[i];
     }
     os << endl;
     return os;
