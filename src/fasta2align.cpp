@@ -28,6 +28,9 @@
 // $Id$
 // $Header$
 // $Log$
+// Revision 1.6  2004/06/14 16:59:18  cmbruns
+// Reworked yet again for different testing of sum of pairs score
+//
 // Revision 1.5  2004/06/04 19:32:24  cmbruns
 // Updated GPL header
 //
@@ -37,7 +40,7 @@
 
 #include <iostream>
 #include <fstream>
-#include "AlignmentMethod.h"
+#include "SequenceAlignment.h"
 #include "BioSequence.h"
 #include "Exceptions.h"
 
@@ -45,47 +48,72 @@ using namespace std;
 
 int main (int argc, char * const argv[]) {
 
-	// TODO - make this a command line parameter
-	const char * = "pdb1coa.ent";
+	SequenceAlignment b1,b2,b3;
 	
-	PDBEntry test_pdb;
-	test_pdb.load_pdb_file(pdb_file_name);
 	
-	PDBModel & pdb_model = test_pdb.get_first_model();
-	for (char chain_id = pdb_model.chain_order().begin();
-		 chain_id != pdb_modle.chain_order().end();
-		 chain_id ++) {
+	// SequenceAlignment true_alignment;
+	// true_alignment.load_fasta_file("fnr_pdr_true.fasta");
+	// cout << true_alignment << endl;
 		
-		PDBChain & chain = pdb_model.chain(chain_id);
+	b1.load_pdb_file("1FND.pdb");
+	// b1.set_weight(1.0);
+	
+	b2.load_fasta_file("pdr.fasta");
+	// b2.set_weight(0.7);
 
-		chain.store_accessible_surface_area();
-		for (unsigned int r = 0; r < chain.residue_count(); r++) {
-			const PDBResidue & residue = chain.get_residue(r);
-			
-			double residue_area = 0.0;
-			try {residue_area = residue.get_accessible_surface_area();}
-			catch (AREA_NOT_YET_COMPUTED_EXCEPTION e) {continue;}
-			
-			cout << residue.one_letter_code() << " ";
-			cout << residue.get_residue_number() << " ";
-			cout << residue_area << endl;
-		}
-	}
-		
+	b3.load_fasta_file("b5.fasta");
+	// b3.set_weight(0.7);
+
+	// b1 = "AAACCCWWW";
+	// b3 = "CCCWWW";
+	// b2 = "CCCWWW";
+	
+	SequenceAlignment test_alignment = b1.align(b2);
+	cout << test_alignment;
+	
+	// cout << "Accuracy = " << test_alignment.report_accuracy(true_alignment) << endl;
+
+	AlignmentScore alignment_score = test_alignment.alignment_score();
+	AlignmentScore sum_of_pairs_score = test_alignment.delta_sum_of_pairs_score(b1.sequence().size());
+	AlignmentScore discrepancy_score = alignment_score - sum_of_pairs_score;
+	
+	cout << endl << endl;
+	cout << "Alignment score:" << endl;
+	alignment_score.print_details(cout);
+	cout << endl << endl;
+	cout << "Sum of pairs score:" << endl;
+	sum_of_pairs_score.print_details(cout);
+	cout << endl << endl;
+	cout << "Discrepancy:" << endl;
+	discrepancy_score.print_details(cout);
+	cout << endl << endl;
+	
+
+	
+	SequenceAlignment test_alignment2 = b3.align(test_alignment);
+	cout << test_alignment2;
+	
+	// cout << "Accuracy = " << test_alignment2.report_accuracy(true_alignment) << endl;
+	
+	alignment_score = test_alignment2.alignment_score();
+	sum_of_pairs_score = test_alignment2.delta_sum_of_pairs_score(b3.sequence().size());
+	discrepancy_score = alignment_score - sum_of_pairs_score;
+	
+	cout << endl << endl;
+	cout << "Alignment score:" << endl;
+	alignment_score.print_details(cout);
+	cout << endl << endl;
+	cout << "Sum of pairs score:" << endl;
+	sum_of_pairs_score.print_details(cout);
+	cout << endl << endl;
+	cout << "Discrepancy:" << endl;
+	discrepancy_score.print_details(cout);
+
+	// cout << endl << endl << "first alignment" << endl;
+	// test_alignment.print_debug();
+
+	// cout << endl << endl << "final alignment" << endl;
+	// test_alignment2.print_debug();
+	
 	return 0;
-	
-	SequenceAlignment a1;
-	a1.load_pdb_file("1FND.pdb");
-	a1.set_weight(1.0);
-	
-	cout << a1 << endl;
-	
-	// Read second sequence file
-	SequenceAlignment a2;
-	a2.load_fasta_file("pdr.fasta");
-	a2.set_weight(0.7);
-	
-	cout << a1.align(a2);
-	
-    return 0;
 }
