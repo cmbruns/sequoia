@@ -1,3 +1,41 @@
+// This file is part of the Sequoia package for macromolecular 
+//  sequence/structure analysis
+// Copyright (C) 2004  Christopher M. Bruns, Ph.D.
+// 
+// This program is free software; you can redistribute it and/or
+// modify it under the terms of the GNU General Public License
+// as published by the Free Software Foundation; either version 2
+// of the License, or (at your option) any later version.
+// 
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+// 
+// You should have received a copy of the GNU General Public License
+// along with this program; if not, write to the Free Software
+// Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+// 
+// See the accompanying file 'LICENSE' for details
+// 
+// To contact the author, write to cmbruns@comcast.net or bruns@scripps.edu
+// In publications please cite: Bruns et al (1999), J.Mol.Biol. 288:427-439
+// Please submit bug reports at http://bruns.homeip.net/bugzilla/
+// 
+// To obtain a non-GPL version of this program, see http://bruns.homeip.net/sequoia.html
+// 
+
+// $Id$
+// $Header$
+// $Log$
+// Revision 1.5  2004/06/04 19:13:45  cmbruns
+// Updated GPL header
+//
+// Moved initialization of one_letter_code values from header, here, to cpp file, so it will compile on baxter (Linux)
+//
+// Made residue_number accessors virtual, so that the structure residue numbers will work correctly
+//
+
 #ifndef __RESIDUE_H__
 #define __RESIDUE_H__
 
@@ -30,7 +68,7 @@ class Residue {
 	friend class Conservidue;
 protected:
 	int p_residue_number;  // Only one true instance variable (non static)
-	const static char p_one_letter_code = '?'; // should not be accessed, every subclass should override this...
+	const static char p_one_letter_code; // should not be accessed, every subclass should override this...
 	Macromolecule p_macromolecule;
 	const BioSequence * p_sequence_pointer;
 	
@@ -45,9 +83,9 @@ public:
     virtual const char & one_letter_code() const {return p_one_letter_code;}
 
 	const BioSequence * sequence_pointer() const {return p_sequence_pointer;}
-	void set_sequence_pointer(BioSequence * p) {p_sequence_pointer = p;}
+	virtual void set_sequence_pointer(BioSequence * p) {p_sequence_pointer = p;}
 	int & residue_number() {return p_residue_number;}
-	int get_residue_number() const {return p_residue_number;}
+	virtual int get_residue_number() const {return p_residue_number;}
 	Macromolecule & macromolecule() {return p_macromolecule;}
 		
 	virtual bool is_gap() const {return false;} // only GapResidue can be a gap
@@ -63,6 +101,7 @@ public:
 			
 		return os;
 	}
+	void set_residue_number(int n) {p_residue_number = n;}
 
 	Residue() 
 		: 
@@ -79,7 +118,7 @@ public:
 class GapResidue : public Residue {
 protected:
 	static string p_three_letter_code;	
-	const static char p_one_letter_code = '-';
+	const static char p_one_letter_code;
 public:
 	GapResidue() {
 		p_three_letter_code = "---";
@@ -95,7 +134,7 @@ public:
 ////////// Intermediate classes for protein and nucleotides //////////
 class Nucleotide : public Residue {	
 protected:
-	const static char p_one_letter_code = 'N'; // default to ambiguity character
+	const static char p_one_letter_code; // default to ambiguity character
 public:
 	// Need accessor functions for variables so "virtual" functionality will work
 	virtual const char & one_letter_code() const {return p_one_letter_code;}
@@ -111,7 +150,7 @@ public:
 class AminoAcid : public Residue {	
 protected:
 	static string p_three_letter_code;	
-	const static char p_one_letter_code = 'X'; // default to ambiguity character
+	const static char p_one_letter_code; // default to ambiguity character
 public:
 	// Need accessor functions for variables so "virtual" functionality will work
 	virtual const char & one_letter_code() const {return p_one_letter_code;}
@@ -132,7 +171,7 @@ Residue * new_protein_residue(const char one_letter_code);
 
 class Adenylate : public Nucleotide {	
 protected:
-	const static char p_one_letter_code = 'A'; // default to ambiguity character
+	const static char p_one_letter_code; // default to ambiguity character
 public:
 	Adenylate * new_clone() const {return new Adenylate(*this);}
 	const static string name;
@@ -140,7 +179,7 @@ public:
 
 class Cytidylate : public Nucleotide {	
 protected:
-	const static char p_one_letter_code = 'C'; // default to ambiguity character
+	const static char p_one_letter_code; // default to ambiguity character
 public:
 	Cytidylate * new_clone() const {return new Cytidylate(*this);}
 	const static string name;
@@ -148,7 +187,7 @@ public:
 
 class Guanylate : public Nucleotide {	
 protected:
-	const static char p_one_letter_code = 'G'; // default to ambiguity character
+	const static char p_one_letter_code; // default to ambiguity character
 public:
 	Guanylate * new_clone() const {return new Guanylate(*this);}
 	const static string name;
@@ -156,7 +195,7 @@ public:
 
 class Thymidylate : public Nucleotide {	
 protected:
-	const static char p_one_letter_code = 'T'; // default to ambiguity character
+	const static char p_one_letter_code; // default to ambiguity character
 public:
 	Thymidylate * new_clone() const {return new Thymidylate(*this);}
 	const static string name;
@@ -168,7 +207,7 @@ public:
 class Alanine : public AminoAcid {	
 protected:
 	static string p_three_letter_code;	
-	const static char p_one_letter_code = 'A'; // default to ambiguity character
+	const static char p_one_letter_code; // default to ambiguity character
 public:
 	// Need accessor functions for variables so "virtual" functionality will work
 	const char & one_letter_code() const {return p_one_letter_code;}
@@ -180,7 +219,7 @@ public:
 class Asparambiguous : public AminoAcid {	
 protected:
 	static string p_three_letter_code;	
-	const static char p_one_letter_code = 'B'; // default to ambiguity character
+	const static char p_one_letter_code; // default to ambiguity character
 public:
 	// Need accessor functions for variables so "virtual" functionality will work
 	const char & one_letter_code() const {return p_one_letter_code;}
@@ -192,7 +231,7 @@ public:
 class Cysteine : public AminoAcid {	
 protected:
 	static string p_three_letter_code;	
-	const static char p_one_letter_code = 'C'; // default to ambiguity character
+	const static char p_one_letter_code; // default to ambiguity character
 public:
 	// Need accessor functions for variables so "virtual" functionality will work
 	const char & one_letter_code() const {return p_one_letter_code;}
@@ -204,7 +243,7 @@ public:
 class Aspartate : public AminoAcid {	
 protected:
 	static string p_three_letter_code;	
-	const static char p_one_letter_code = 'D'; // default to ambiguity character
+	const static char p_one_letter_code; // default to ambiguity character
 public:
 	// Need accessor functions for variables so "virtual" functionality will work
 	const char & one_letter_code() const {return p_one_letter_code;}
@@ -216,7 +255,7 @@ public:
 class Glutamate : public AminoAcid {	
 protected:
 	static string p_three_letter_code;	
-	const static char p_one_letter_code = 'E'; // default to ambiguity character
+	const static char p_one_letter_code; // default to ambiguity character
 public:
 	// Need accessor functions for variables so "virtual" functionality will work
 	const char & one_letter_code() const {return p_one_letter_code;}
@@ -228,7 +267,7 @@ public:
 class Phenylalanine : public AminoAcid {	
 protected:
 	static string p_three_letter_code;	
-	const static char p_one_letter_code = 'F'; // default to ambiguity character
+	const static char p_one_letter_code; // default to ambiguity character
 public:
 	// Need accessor functions for variables so "virtual" functionality will work
 	const char & one_letter_code() const {return p_one_letter_code;}
@@ -240,7 +279,7 @@ public:
 class Glycine : public AminoAcid {	
 protected:
 	static string p_three_letter_code;	
-	const static char p_one_letter_code = 'G'; // default to ambiguity character
+	const static char p_one_letter_code; // default to ambiguity character
 public:
 	// Need accessor functions for variables so "virtual" functionality will work
 	const char & one_letter_code() const {return p_one_letter_code;}
@@ -252,7 +291,7 @@ public:
 class Histidine : public AminoAcid {	
 protected:
 	static string p_three_letter_code;	
-	const static char p_one_letter_code = 'H'; // default to ambiguity character
+	const static char p_one_letter_code; // default to ambiguity character
 public:
 	// Need accessor functions for variables so "virtual" functionality will work
 	const char & one_letter_code() const {return p_one_letter_code;}
@@ -264,7 +303,7 @@ public:
 class Isoleucine : public AminoAcid {	
 protected:
 	static string p_three_letter_code;	
-	const static char p_one_letter_code = 'I'; // default to ambiguity character
+	const static char p_one_letter_code; // default to ambiguity character
 public:
 	// Need accessor functions for variables so "virtual" functionality will work
 	const char & one_letter_code() const {return p_one_letter_code;}
@@ -276,7 +315,7 @@ public:
 class Lysine : public AminoAcid {	
 protected:
 	static string p_three_letter_code;	
-	const static char p_one_letter_code = 'K'; // default to ambiguity character
+	const static char p_one_letter_code; // default to ambiguity character
 public:
 	// Need accessor functions for variables so "virtual" functionality will work
 	const char & one_letter_code() const {return p_one_letter_code;}
@@ -288,7 +327,7 @@ public:
 class Leucine : public AminoAcid {
 protected:
 	static string p_three_letter_code;	
-	const static char p_one_letter_code = 'L'; // default to ambiguity character
+	const static char p_one_letter_code; // default to ambiguity character
 public:
 	// Need accessor functions for variables so "virtual" functionality will work
 	const char & one_letter_code() const {return p_one_letter_code;}
@@ -300,7 +339,7 @@ public:
 class Methionine : public AminoAcid {
 protected:
 	static string p_three_letter_code;	
-	const static char p_one_letter_code = 'M'; // default to ambiguity character
+	const static char p_one_letter_code; // default to ambiguity character
 public:
 	// Need accessor functions for variables so "virtual" functionality will work
 	const char & one_letter_code() const {return p_one_letter_code;}
@@ -312,7 +351,7 @@ public:
 class Asparagine : public AminoAcid {
 protected:
 	static string p_three_letter_code;	
-	const static char p_one_letter_code = 'N'; // default to ambiguity character
+	const static char p_one_letter_code; // default to ambiguity character
 public:
 	// Need accessor functions for variables so "virtual" functionality will work
 	const char & one_letter_code() const {return p_one_letter_code;}
@@ -326,7 +365,7 @@ public:
 class Proline : public AminoAcid {
 protected:
 	static string p_three_letter_code;	
-	const static char p_one_letter_code = 'P'; // default to ambiguity character
+	const static char p_one_letter_code; // default to ambiguity character
 public:
 	// Need accessor functions for variables so "virtual" functionality will work
 	const char & one_letter_code() const {return p_one_letter_code;}
@@ -338,7 +377,7 @@ public:
 class Glutamine : public AminoAcid {
 protected:
 	static string p_three_letter_code;	
-	const static char p_one_letter_code = 'Q'; // default to ambiguity character
+	const static char p_one_letter_code; // default to ambiguity character
 public:
 	// Need accessor functions for variables so "virtual" functionality will work
 	const char & one_letter_code() const {return p_one_letter_code;}
@@ -350,7 +389,7 @@ public:
 class Arginine : public AminoAcid {
 protected:
 	static string p_three_letter_code;	
-	const static char p_one_letter_code = 'R'; // default to ambiguity character
+	const static char p_one_letter_code; // default to ambiguity character
 public:
 	// Need accessor functions for variables so "virtual" functionality will work
 	const char & one_letter_code() const {return p_one_letter_code;}
@@ -362,7 +401,7 @@ public:
 class Serine : public AminoAcid {
 protected:
 	static string p_three_letter_code;	
-	const static char p_one_letter_code = 'S'; // default to ambiguity character
+	const static char p_one_letter_code; // default to ambiguity character
 public:
 	// Need accessor functions for variables so "virtual" functionality will work
 	const char & one_letter_code() const {return p_one_letter_code;}
@@ -374,7 +413,7 @@ public:
 class Threonine : public AminoAcid {
 protected:
 	static string p_three_letter_code;	
-	const static char p_one_letter_code = 'T'; // default to ambiguity character
+	const static char p_one_letter_code; // default to ambiguity character
 public:
 	// Need accessor functions for variables so "virtual" functionality will work
 	const char & one_letter_code() const {return p_one_letter_code;}
@@ -386,7 +425,7 @@ public:
 class Selenocysteine : public AminoAcid {
 protected:
 	static string p_three_letter_code;	
-	const static char p_one_letter_code = 'U'; // default to ambiguity character
+	const static char p_one_letter_code; // default to ambiguity character
 public:
 	// Need accessor functions for variables so "virtual" functionality will work
 	const char & one_letter_code() const {return p_one_letter_code;}
@@ -398,7 +437,7 @@ public:
 class Valine : public AminoAcid {
 protected:
 	static string p_three_letter_code;	
-	const static char p_one_letter_code = 'V'; // default to ambiguity character
+	const static char p_one_letter_code; // default to ambiguity character
 public:
 	// Need accessor functions for variables so "virtual" functionality will work
 	const char & one_letter_code() const {return p_one_letter_code;}
@@ -410,7 +449,7 @@ public:
 class Tryptophan : public AminoAcid {
 protected:
 	static string p_three_letter_code;	
-	const static char p_one_letter_code = 'W'; // default to ambiguity character
+	const static char p_one_letter_code; // default to ambiguity character
 public:
 	// Need accessor functions for variables so "virtual" functionality will work
 	const char & one_letter_code() const {return p_one_letter_code;}
@@ -422,7 +461,7 @@ public:
 class Tyrosine : public AminoAcid {
 protected:
 	static string p_three_letter_code;	
-	const static char p_one_letter_code = 'Y'; // default to ambiguity character
+	const static char p_one_letter_code; // default to ambiguity character
 public:
 	// Need accessor functions for variables so "virtual" functionality will work
 	const char & one_letter_code() const {return p_one_letter_code;}
@@ -434,7 +473,7 @@ public:
 class Glutambiguous : public AminoAcid {
 protected:
 	static string p_three_letter_code;	
-	const static char p_one_letter_code = 'Z'; // default to ambiguity character
+	const static char p_one_letter_code; // default to ambiguity character
 public:
 	// Need accessor functions for variables so "virtual" functionality will work
 	const char & one_letter_code() const {return p_one_letter_code;}
