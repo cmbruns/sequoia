@@ -1,9 +1,50 @@
+// This file is part of the Sequoia package for macromolecular 
+//  sequence/structure analysis
+// Copyright (C) 2004  Christopher M. Bruns, Ph.D.
+// 
+// This program is free software; you can redistribute it and/or
+// modify it under the terms of the GNU General Public License
+// as published by the Free Software Foundation; either version 2
+// of the License, or (at your option) any later version.
+// 
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+// 
+// You should have received a copy of the GNU General Public License
+// along with this program; if not, write to the Free Software
+// Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+// 
+// See the accompanying file 'LICENSE' for details
+// 
+// To contact the author, write to cmbruns@comcast.net or bruns@scripps.edu
+// In publications please cite: Bruns et al (1999), J.Mol.Biol. 288:427-439
+// Please submit bug reports at http://bruns.homeip.net/bugzilla/
+// 
+// To obtain a non-GPL version of this program, see http://bruns.homeip.net/sequoia.html
+// 
+
+// $Id$
+// $Header$
+// $Log$
+// Revision 1.4  2004/06/04 19:11:41  cmbruns
+// Updated GPL header
+//
+// Set one_letter_code values here instead of header, so it will compile on baxter (Linux)
+//
+
 #include "Residue.h"
 
 // static member string variables must be initialized in a .cpp file, not a header file
 
+const char Residue::p_one_letter_code = '?'; // Should this base class be used for "unknown?"
+
 string AminoAcid::p_three_letter_code = "Xxx"; // Should this base class be used for "unknown?"
+const char AminoAcid::p_one_letter_code = 'X'; // Should this base class be used for "unknown?"
+
 string GapResidue::p_three_letter_code = "---";
+const char GapResidue::p_one_letter_code = '-';
 
 string       Alanine::p_three_letter_code = "Ala";
 string Asparambiguous::p_three_letter_code = "Asx";
@@ -28,6 +69,30 @@ string        Valine::p_three_letter_code = "Val";
 string    Tryptophan::p_three_letter_code = "Trp";
 string      Tyrosine::p_three_letter_code = "Tyr";
 string Glutambiguous::p_three_letter_code = "Glx";
+
+const char       Alanine::p_one_letter_code = 'A';
+const char Asparambiguous::p_one_letter_code = 'B';
+const char      Cysteine::p_one_letter_code = 'C';
+const char     Aspartate::p_one_letter_code = 'D';
+const char     Glutamate::p_one_letter_code = 'E';
+const char Phenylalanine::p_one_letter_code = 'F';
+const char       Glycine::p_one_letter_code = 'G';
+const char     Histidine::p_one_letter_code = 'H';
+const char    Isoleucine::p_one_letter_code = 'I';
+const char        Lysine::p_one_letter_code = 'K';
+const char       Leucine::p_one_letter_code = 'L';
+const char	  Methionine::p_one_letter_code = 'M';
+const char    Asparagine::p_one_letter_code = 'N';
+const char       Proline::p_one_letter_code = 'P';
+const char     Glutamine::p_one_letter_code = 'Q';
+const char      Arginine::p_one_letter_code = 'R';
+const char        Serine::p_one_letter_code = 'S';
+const char     Threonine::p_one_letter_code = 'T';
+const char Selenocysteine::p_one_letter_code = 'U';
+const char        Valine::p_one_letter_code = 'V';
+const char    Tryptophan::p_one_letter_code = 'W';
+const char      Tyrosine::p_one_letter_code = 'Y';
+const char Glutambiguous::p_one_letter_code = 'Z';
 
 // Functions 
 
