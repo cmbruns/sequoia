@@ -6,7 +6,7 @@
  *  1) Sequence alignment - one sequence or an alignment of sequences
  *  2) Conservidue - one residue or an alignment of residues
  *
- *  Sequence alignment METHODS are actually in ConservidueAlignment.h
+ *  Sequence alignment METHODS are actually in AlignmentMethod.h
  *
  *  Created by Christopher Bruns on Mon May 03 2004.
  *  Copyright (c) 2004  All rights reserved.
@@ -22,13 +22,18 @@
 #include "BioSequence.h"
 #include "AlignmentMethod.h"
 #include "Exceptions.h"
+#include "GapModel.h"
 
 using namespace std; // So STL stuff will work in the traditional way
 
-#define DEFAULT_LEFT_GAP_FACTOR 0.5
-#define DEFAULT_RIGHT_GAP_FACTOR 0.5
-#define DEFAULT_LEFT_GAP_EXTENSION_FACTOR 0.0
-#define DEFAULT_RIGHT_GAP_EXTENSION_FACTOR 0.0
+#define DEFAULT_LEFT_GAP_FACTOR 1.0
+#define DEFAULT_RIGHT_GAP_FACTOR 1.0
+#define DEFAULT_LEFT_GAP_EXTENSION_FACTOR 0.5
+#define DEFAULT_RIGHT_GAP_EXTENSION_FACTOR 0.5
+
+#define DEFAULT_GAP_OPENING_PENALTY -0.35
+#define DEFAULT_GAP_CLOSING_PENALTY -0.35
+#define DEFAULT_GAP_DELETION_PENALTY -0.35
 
 // Alignment space determines the alignment method.
 // For protein sequences, it should always be protein
@@ -74,8 +79,8 @@ protected:
 
 	double gap_opening_penalty; // -log2 probability of loop beginning with this Conservidue
 	double gap_closing_penalty; // -log2 probability of loop before this Conservidue
-	double gap_extension_penalty; // -log2 probability of this residue adding to a loop
 	double gap_deletion_penalty; // -log2 probability of gap after this Conservidue
+	ResidueGapParameter p_gap_parameter;
 	
 	SequenceAlignment * parent_alignment;
 	
@@ -91,10 +96,9 @@ protected:
 	vector<int> sequence_residues; // ALERT - assumes that each conservidue has at most one residue from each sequence
 
 	void initialize_members() {
-		gap_opening_penalty = -1.1;
-		gap_closing_penalty = -1.1;
-		gap_extension_penalty = -0.23;
-		gap_deletion_penalty = -1.0;
+		gap_opening_penalty = DEFAULT_GAP_OPENING_PENALTY;
+		gap_closing_penalty = DEFAULT_GAP_CLOSING_PENALTY;
+		gap_deletion_penalty = DEFAULT_GAP_DELETION_PENALTY;
 		parent_alignment = NULL;
 		weighted_sequence_count = 0;
 		array_sequence_index = 0;
@@ -107,6 +111,17 @@ public:
 	bool is_initial; // Conservidue has no predecessors, fake Conservidue to indicate start state
 	bool is_final; // Conservidue has no successors, fake Conservidue to indicate stop state
 
+	// Piecewise linear gap model
+	double gap_extension_penalty(unsigned int gseg) const { // -log2 probability of this residue adding to a loop
+		return p_gap_parameter.extension_penalty(gseg);
+	}
+	double gap_open_offset(unsigned int gseg) const { // -log2 probability of this residue adding to a loop
+		return p_gap_parameter.open_offset(gseg);
+	}
+	double gap_close_offset(unsigned int gseg) const { // -log2 probability of this residue adding to a loop
+		return p_gap_parameter.close_offset(gseg);
+	}
+	
 	// Given a sequence, return the residue that is in this conservidue (for printing)
 	const Residue * sequence_residue(unsigned int sequence_number) const;
 
@@ -122,7 +137,6 @@ public:
 		os << indent << "weighted_sequence_count = " << weighted_sequence_count << endl;
 		os << indent << "gap_opening_penalty = " << gap_opening_penalty << endl;
 		os << indent << "gap_closing_penalty = " << gap_closing_penalty << endl;
-		os << indent << "gap_extension_penalty = " << gap_extension_penalty << endl;
 		os << indent << "gap_deletion_penalty = " << gap_deletion_penalty << endl;
 		os << indent << "is_initial = " << is_initial << endl;
 		os << indent << "is_final = " << is_final << endl;
@@ -141,7 +155,7 @@ public:
 	}
 	
 	Conservidue(const Residue & residue); 
-	Conservidue() {
+	Conservidue() : p_gap_parameter(protein_gap_model) {
 		initialize_members();
 	} // Simple constructor	
 };
@@ -153,7 +167,7 @@ class SequenceAlignment {
 	friend class ConservidueAlignment;
 	friend class Conservidue;
 	// simple string output routine
-	friend ostream & operator<<(ostream & os, const SequenceAlignment & s);
+	// friend ostream & operator<<(ostream & os, const SequenceAlignment & s);
 protected:
 	// Scale scores of end gaps by this amount, but not extensions
 	double left_gap_factor; // coefficient for left end gaps, other than extensions
@@ -171,18 +185,141 @@ protected:
 								 // as opposed to sum of pairs score
 
 public:
-	int length() const {return conservidues.size();}
+	unsigned int length() const {return conservidues.size();}
 	const Conservidue & operator[](int i) const {return conservidues.at(i);}
+
+	void set_gap_penalty(double penalty) {
+		// Distribute evenly among open, close, and delete
+		double each_penalty = penalty / 3.0;
+		for (unsigned int i = 0; i < conservidues.size(); i++) {
+			conservidues[i].gap_opening_penalty = each_penalty;
+			conservidues[i].gap_closing_penalty = each_penalty;
+			conservidues[i].gap_deletion_penalty = each_penalty;
+		}
+	}
+	void set_extension_penalty(const GapModel & gap_model) {
+		// Distribute evenly among open, close, and delete
+		ResidueGapParameter parameter(gap_model);
+		for (unsigned int i = 0; i < conservidues.size(); i++) {
+			conservidues[i].p_gap_parameter = parameter;
+		}
+	}
 	
+	float report_accuracy(const SequenceAlignment & true_alignment) {
+		const SequenceAlignment & test_alignment = *this;
+		// start by assuming both are pairwise alignments
+		
+		// index is sequence1 residue, value is sequence2 residue
+		// first read matches from trusted alignment
+		vector<int> true_matches(true_alignment.sequences[1].length(), -1);
+		int true_match_count = 0;
+		for (unsigned int i = 0; i < true_alignment.conservidues.size(); i++) {
+			const Conservidue & conservidue = true_alignment.conservidues[i];
+			int sequence1_residue_index = conservidue.sequence_residues[0];
+			int sequence2_residue_index = conservidue.sequence_residues[1];
+
+			if (sequence1_residue_index < 0) continue;
+			if (sequence2_residue_index < 0) continue;
+
+			const Residue & residue1 = true_alignment.sequences[0][sequence1_residue_index];
+			const Residue & residue2 = true_alignment.sequences[1][sequence2_residue_index];
+
+			if (residue1.is_gap()) continue;
+			if (residue2.is_gap()) continue;
+
+			int residue1_number = residue1.get_residue_number();
+			int residue2_number = residue2.get_residue_number();
+
+			// cout << residue1.one_letter_code() << residue2.one_letter_code() << endl;
+			// cout << residue1_number << ", " << residue2_number << endl;
+						
+			true_matches[residue1_number] = residue2_number;
+
+			true_match_count ++;
+		}
+		// cout << true_match_count << " true equivalent residue pairs found" << endl;
+
+		// next read matches from test alignment
+		int true_positive_count = 0;
+		int false_positive_count = 0;
+		for (unsigned int i = 0; i < test_alignment.conservidues.size(); i++) {
+			const Conservidue & conservidue = test_alignment.conservidues[i];
+			int sequence1_residue_index = conservidue.sequence_residues[0];
+			int sequence2_residue_index = conservidue.sequence_residues[1];
+			
+			if (sequence1_residue_index < 0) continue;
+			if (sequence2_residue_index < 0) continue;
+			
+			const Residue & residue1 = test_alignment.sequences[0][sequence1_residue_index];
+			const Residue & residue2 = test_alignment.sequences[1][sequence2_residue_index];
+			
+			if (residue1.is_gap()) continue;
+			if (residue2.is_gap()) continue;
+			
+			// cout << residue1.one_letter_code() << residue2.one_letter_code() << endl;
+			int residue1_number = residue1.get_residue_number();
+			int residue2_number = residue2.get_residue_number();
+			
+			if (true_matches[residue1_number] == residue2_number) {
+				true_positive_count ++;
+				// cout << residue1.one_letter_code() << residue2.one_letter_code() << endl;
+				// cout << residue1_number << ", " << residue2_number << endl;
+			}
+			else {
+				false_positive_count ++;
+			}
+			
+		}
+		// cout << true_positive_count << " aligned pairs correctly predicted" << endl;
+		// cout << false_positive_count << " aligned pairs incorrectly predicted" << endl;
+
+		float Q_accuracy = 100.0 * (float)true_positive_count / (float)true_match_count;
+		return Q_accuracy;
+	}
+
 	// Core profile alignment routine
 	// See AlignmentMethod.cpp for implementation
-	SequenceAlignment SequenceAlignment::align(const SequenceAlignment & seq2) const;
+	SequenceAlignment align(const SequenceAlignment & seq2,
+							AlignmentGranularity granularity = ALIGN_GLOBAL) const;
 
 	void add_sequence(const BioSequence & sequence) { // does not automatically update conservidues!!
 		sequences.push_back(sequence);
 		int sequence_index = sequences.size() - 1;
 		sequences.back().alignment_sequence_index = sequence_index;
 		sequences.back().parent_alignment = this;
+	}
+	void add_sequence_automatic(const BioSequence & sequence) {
+		// Unlike add_sequence, updates conservidues as well
+		// Requires that the sequence length is the same as the current Alignment length
+		//  (the sequence may include gaps for this)
+		SequenceAlignment & alignment = *this;
+
+		if (alignment.sequences.size() == 0) { // No sequences have been added yet
+			SequenceAlignment new_alignment(sequence);
+			alignment = new_alignment;
+			// cout << new_alignment;
+		}
+		else {
+			if (alignment.length() != (sequence.length() + 1))
+				throw ALIGNMENT_LENGTH_MISMATCH_EXCEPTION;
+			SequenceAlignment single_sequence_alignment(sequence);
+			SequenceAlignment new_alignment(alignment);
+			// 1) Add sequence structure
+			new_alignment.sequences.clear();
+			// From starting alignment
+			for (unsigned int i = 0; i < alignment.sequences.size(); i ++)
+				new_alignment.add_sequence(alignment.sequences[i]);
+			// And from new sequence
+			new_alignment.add_sequence(sequence);
+			// 2) Add conservidues
+			new_alignment.conservidues.clear();
+			Conservidue begin_conservidue;
+			new_alignment.add_conservidue(begin_conservidue);  // Everyone needs a single begin
+			for (unsigned int i = 1; i < alignment.length(); i ++) {
+				new_alignment.add_conservidue(alignment[i].combine_conservidues(single_sequence_alignment[i]));
+			}
+			alignment = new_alignment;
+		}
 	}
 	
 	void add_conservidue(const Conservidue & c, unsigned int sequence_index_offset = 0) {
@@ -226,6 +363,9 @@ public:
 		}
 	}
 
+	ostream & SequenceAlignment::print_pretty(ostream & os) const;
+	istream & SequenceAlignment::load_fasta(istream & is);
+	
 	ostream & print_debug(ostream & os = cout, unsigned int indent_size = 0) const {
 		string indent = "";
 		for(unsigned int i=0;i<indent_size;i++)indent += " ";
@@ -289,5 +429,6 @@ public:
 };
 
 istream & operator>>(istream & is, SequenceAlignment & alignment);
+ostream & operator<<(ostream & os, const SequenceAlignment & s);
 
 #endif
