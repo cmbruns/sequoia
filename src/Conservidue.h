@@ -22,10 +22,20 @@
 // In publications please cite: Bruns et al (1999), J.Mol.Biol. 288:427-439
 // Please submit bug reports at http://bruns.homeip.net/bugzilla/
 // 
+// To obtain a non-GPL version of this program, see http://bruns.homeip.net/sequoia.html
 
 // $Id$
 // $Header$
 // $Log$
+// Revision 1.2  2004/06/04 19:06:10  cmbruns
+// Updated GPL header
+//
+// Initial stubs for subroutines related to sum of pairs scoring in alignment
+//
+// Initial version of indel_conservidue subroutine, intended to help clean up the trace back code in AlignmentMethod.cpp
+//
+// Implemented residue_score_count member, to precompute scores for faster alignment
+//
 // Revision 1.1  2004/05/29 22:40:30  cmbruns
 // Created separate files for Conservidue, separate from SequenceAlignment
 //
@@ -38,6 +48,8 @@
 #include "Score.h"
 #include "GapModel.h"
 #include "BioSequence.h"
+
+// TODO - eliminate sequence_residues from Conservidue
 
 // Class to capture the transition between one profile column and its predecessors
 class ConserviduePredecessor {
@@ -97,6 +109,9 @@ protected:
 	vector<int> sequence_residues; // ALERT - assumes that each conservidue has at most one residue from each sequence
 	vector<int> sequence_changes; // which sequences change their presence status vs.the previous residue
 	
+	map<char, float> residue_counts; // weighted by sequence weights
+	vector<float> residue_score_counts; // precomputed score for each amino acid in alignment partner
+	
 	void initialize_members();
 	
 public:
@@ -104,12 +119,33 @@ public:
 	int array_sequence_index; // actual order of Conservidue in parent sequence
 	bool is_initial; // Conservidue has no predecessors, fake Conservidue to indicate start state
 	bool is_final; // Conservidue has no successors, fake Conservidue to indicate stop state
-	map<char, float> residue_counts; // weighted by sequence weights
-	
+
 	// Member functions
+
+	// Populate an "empty" indel conservidue to be placed after the subject conservidue
+	Conservidue indel_conservidue() const;
+	
+	// Precomputed score vector for efficient match score computation
+	float get_residue_score_count(char amino_acid) const {
+		int index = toupper(amino_acid - 'A');
+		if (index < 0) return 0;
+		if (index > ('Z' - 'A')) return 0;
+		return residue_score_counts[index];
+	}
+	float & residue_score_count(char amino_acid) {
+		int index = toupper(amino_acid - 'A');
+		if (index < 0) throw 99;
+		if (index > ('Z' - 'A')) throw 99;
+		return residue_score_counts[index];
+	}
 	
 	Conservidue combine_conservidues(const Conservidue & conservidue2) const; // for aligned conservidues
-																			  // Piecewise linear gap model	
+
+	// Support functions for alignment scores
+	AlignmentScore match_score(const Conservidue & conservidue2) const;
+	AlignmentScore match_gap_extension_score(const Conservidue & conservidue2, unsigned int gseg) const;
+
+	// Piecewise linear gap model	
 	AlignmentScore gap_extension_penalty(unsigned int gseg) const;
 	AlignmentScore gap_open_offset(unsigned int gseg) const;
 	AlignmentScore gap_close_offset(unsigned int gseg) const;
@@ -122,6 +158,7 @@ public:
 	Conservidue(const Residue & residue); 
 	Conservidue();
 };
+
 
 #endif
 
