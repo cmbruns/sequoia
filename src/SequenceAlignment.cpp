@@ -5,8 +5,10 @@ template class map<const char, float>;
 // ********* Conservidue methods *************
 
 Conservidue::Conservidue(const Residue & residue) {
+	initialize_members();
 	weighted_sequence_count = 1.0;  // 
 	residue_counts[residue.one_letter_code()] = 1.0;
+
 	residues.push_back(&residue);
 }
 
@@ -21,7 +23,12 @@ const Residue * Conservidue::sequence_residue(const BioSequence * seq_ptr) const
 
 // ********* SequenceAlignment methods *************
 
-SequenceAlignment::SequenceAlignment(const BioSequence & seq) {
+SequenceAlignment::SequenceAlignment(const BioSequence & seq) :
+	left_gap_factor(DEFAULT_LEFT_GAP_FACTOR),
+	right_gap_factor(DEFAULT_RIGHT_GAP_FACTOR),
+	left_gap_extension_factor(DEFAULT_LEFT_GAP_EXTENSION_FACTOR),
+	right_gap_extension_factor(DEFAULT_RIGHT_GAP_EXTENSION_FACTOR) {
+
 	conservidues.clear(); // delete previous contents
 	begins.clear();
 	ends.clear();
@@ -31,10 +38,11 @@ SequenceAlignment::SequenceAlignment(const BioSequence & seq) {
 
 	// Add "begin" conservidue
 	Conservidue begin_conservidue;
-	current_conservidue.array_sequence_index = 0;
-	current_conservidue.begin_distance = 0;
-	begin_conservidue.is_begin = true;
+	begin_conservidue.array_sequence_index = 0;
+	begin_conservidue.is_initial = true;
 	begin_conservidue.is_final = false;
+	begin_conservidue.parent_alignment = this;
+	
 	conservidues.push_back(begin_conservidue); // Commit conservidue to array
 	Conservidue * current_conservidue_pointer =  & conservidues.back(); // For storing sequential pointers
 	begins.push_back(current_conservidue_pointer);
@@ -50,9 +58,10 @@ SequenceAlignment::SequenceAlignment(const BioSequence & seq) {
 		current_conservidue.sequence_residues[&seq] = &(seq[i]);
 
 		current_conservidue.array_sequence_index = i + 1;
-		current_conservidue.begin_distance = i;
-		current_conservidue.is_begin = false; // in sequence, begin is defined above
+		current_conservidue.is_initial = false; // in sequence, begin is defined above
 		current_conservidue.is_final = false;
+		current_conservidue.parent_alignment = this;
+		// current_conservidue.residue_counts[seq[i].one_letter_code()] = 1.0;
 			
 		// Set up links for linear sequence
 		ConserviduePredecessor back_link;
@@ -67,15 +76,29 @@ SequenceAlignment::SequenceAlignment(const BioSequence & seq) {
 		previous_conservidue_pointer = current_conservidue_pointer;
 	}
 
-	// Add "final" conservidue
-	Conservidue final_conservidue;
-	current_conservidue.array_sequence_index = seq.length() + 1;
-	current_conservidue.begin_distance = seq.length();
-	final_conservidue.is_begin = true;
-	final_conservidue.is_final = false;
-	conservidues.push_back(final_conservidue); // Commit conservidue to array
-	Conservidue * current_conservidue_pointer =  & conservidues.back(); // For storing sequential pointers
-	ends.push_back(current_conservidue_pointer); // Note final conservidue of sequence
+	// Perhaps final empty conservidue is a bad idea
+	if (0) { // Add full final fake conservidue
+			 // Add "final" conservidue
+		Conservidue final_conservidue;
+		final_conservidue.array_sequence_index = seq.length() + 1;
+		final_conservidue.is_initial = false;
+		final_conservidue.is_final = true;
+		final_conservidue.parent_alignment = this;
+
+		// Set up links for linear sequence
+		ConserviduePredecessor back_link;
+		back_link.predecessor_conservidue = previous_conservidue_pointer;
+		back_link.transition_score = 0; // no penalty for following normal sequence		
+		final_conservidue.predecessors.push_back(back_link); // Link to previous conservidue
+	
+		conservidues.push_back(final_conservidue); // Commit conservidue to array
+		current_conservidue_pointer =  & conservidues.back(); // For storing sequential pointers
+		ends.push_back(current_conservidue_pointer); // Note final conservidue of sequence
+	}
+	else { // Simply declare final actual conservidue final
+		current_conservidue_pointer->is_final = true;
+		ends.push_back(current_conservidue_pointer);
+	}
 }
 
 // simple string output routine
@@ -90,8 +113,8 @@ ostream & operator<<(ostream & os, const SequenceAlignment & s) {
 			 ++cons) {
 			const Conservidue & conservidue = * cons;
 
-			if (cons.is_begin()) continue;
-			if (cons.is_end()) continue;
+			if (conservidue.is_initial) continue;
+			if (conservidue.is_final) continue;
 
 			const Residue * res_ptr = conservidue.sequence_residue(seq_ptr);
 			os << res_ptr->one_letter_code();
