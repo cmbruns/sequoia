@@ -28,6 +28,9 @@
 // $Header$
 //
 // $Log$
+// Revision 1.3  2004/05/23 23:45:11  cmbruns
+// renamed print to print_fasta
+//
 // Revision 1.2  2004/05/19 00:55:02  cmbruns
 // Closer integration of alignment, sequence, conservidue and residue:
 //   added friend classes to BioSequence
@@ -142,7 +145,7 @@ public:
   // void set_sequence(const string & s);
 
   ostream & print_debug(ostream & os, unsigned int indent_size = 0) const;
-  ostream & print(ostream & os) const;
+  ostream & print_fasta(ostream & os) const;
 
   // Assignment operator required (just like copy constructor) since 
 	// New pointers must be generated for new residues
@@ -150,8 +153,7 @@ public:
 		if (this == &s2) return *this;   // Gracefully handle self assignment
 		
 		clear(); // delete previous content
-		int i;
-		for (i = 0; i < s2.length(); ++i) {
+		for (unsigned int i = 0; i < s2.length(); ++i) {
 			add_residue(s2[i]);
 		}
 		
@@ -173,7 +175,7 @@ public:
 	  residue.set_sequence_pointer(this);
 	  residue.sequence_residue_index = private_sequence.size() - 1;
   }
-  int length() const {return private_sequence.size();}
+  unsigned int length() const {return private_sequence.size();}
   const Residue & operator[](int index) const {return *(private_sequence[index]);}
   void clear() {
     vector<Residue *>::iterator i;
