@@ -1,6 +1,42 @@
+// This file is part of the Sequoia package for macromolecular 
+//  sequence/structure analysis
+// Copyright (C) 2004  Christopher M. Bruns, Ph.D.
+// 
+// This program is free software; you can redistribute it and/or
+// modify it under the terms of the GNU General Public License
+// as published by the Free Software Foundation; either version 2
+// of the License, or (at your option) any later version.
+// 
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+// 
+// You should have received a copy of the GNU General Public License
+// along with this program; if not, write to the Free Software
+// Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+// 
+// See the accompanying file 'LICENSE' for details
+// 
+// To contact the author, write to cmbruns@comcast.net or bruns@scripps.edu
+// In publications please cite: Bruns et al (1999), J.Mol.Biol. 288:427-439
+// Please submit bug reports at http://bruns.homeip.net/bugzilla/
+// 
+// To obtain a non-GPL version of this program, see http://bruns.homeip.net/sequoia.html
+// 
+
+// $Id$
+// $Header$
+// $Log$
+// Revision 1.5  2004/06/04 19:15:07  cmbruns
+// Updated GPL header
+//
+// Moved conservidue pair score function from here to be a member function of conservidue
+//
+
 #include "Score.h"
-#include "MutationMatrix.h"
-#include "SequenceAlignment.h"
+// #include "MutationMatrix.h"
+// #include "SequenceAlignment.h"
 
 AlignmentScore operator*(const double r, const AlignmentScore & score) {
 	AlignmentScore answer = score;
@@ -10,49 +46,6 @@ AlignmentScore operator*(const double r, const AlignmentScore & score) {
 	answer.closing() *= r;
 	answer.deletion() *= r;
 	answer.transition() *= r;
-	return answer;
-}
-
-AlignmentScore conservidue_pair_score(const Conservidue & c1, const Conservidue & c2) {
-	// Simple sum of pairs formula
-	AlignmentScore answer;
-
-	// nested loops of map iterators seem to cause problems on the Mac
-	// So store the c2 keys in a vector
-	vector<char> c2_chars;
-	map<char,float>::const_iterator res2; // Is the nested loop a problem?
-	for (res2 = c2.residue_counts.begin(); 
-		 res2 != c2.residue_counts.end();
-		 res2 ++) {
-		c2_chars.push_back(res2->first);
-	}
-	
-	// nested loops of map iterators seem to cause problems on the Mac
-	// So store the c2 keys in a vector
-	vector<char> c1_chars;
-	map<char,float>::const_iterator res1; // Is the nested loop a problem?
-	for (res1 = c1.residue_counts.begin(); 
-		 res1 != c1.residue_counts.end();
-		 res1 ++) {
-		c1_chars.push_back(res1->first);
-	}
-	
-	vector<char>::const_iterator charit1;
-	for (charit1 = c1_chars.begin(); charit1 != c1_chars.end(); charit1++) {
-			
-		vector<char>::const_iterator charit2;
-		for (charit2 = c2_chars.begin(); charit2 != c2_chars.end(); charit2++) {
-			
-			float weight1 = c1.residue_counts.find(*charit1)->second;
-			float weight2 = c2.residue_counts.find(*charit2)->second;
-		
-			float sequence_count = weight1 * weight2;
-			float bit_score = blosum62.get_score(*charit1, *charit2);
-
-			answer.match() += sequence_count * bit_score;
-		}
-	}
-	
 	return answer;
 }
 
