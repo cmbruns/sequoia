@@ -31,7 +31,7 @@ string Glutambiguous::p_three_letter_code = "Glx";
 
 // Functions 
 
-AminoAcid * new_protein_residue(const char one_letter_code) {
+Residue * new_protein_residue(const char one_letter_code) {
 	char olc = toupper(one_letter_code);
 	switch (olc) {
 		case 'A': return new Alanine;
@@ -57,6 +57,7 @@ AminoAcid * new_protein_residue(const char one_letter_code) {
 		case 'W': return new Tryptophan;
 		case 'Y': return new Tyrosine;
 		case 'Z': return new Glutambiguous;
+		case '-': return new GapResidue;
 		default: return new AminoAcid; // unknown
 	}
 }

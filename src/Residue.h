@@ -107,7 +107,7 @@ public:
 };
 
 // construct an object of the correct class
-AminoAcid * new_protein_residue(const char one_letter_code);
+Residue * new_protein_residue(const char one_letter_code);
 
 //////////// Instance classes for DNA /////////////////////////
 // string members must be defined in .cpp file //
