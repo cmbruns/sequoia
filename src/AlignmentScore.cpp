@@ -28,6 +28,11 @@
 // $Id$
 // $Header$
 // $Log$
+// Revision 1.2  2004/06/14 16:37:59  cmbruns
+// Added minus operator
+// renamed AlignmentScore to DebugAlignmentScore
+// sketched mechanism for reverting AlignmentScore to double once testing is complete
+//
 // Revision 1.1  2004/06/07 18:47:02  cmbruns
 // Renamed Score object to AlignmentScore
 //
@@ -39,8 +44,8 @@
 
 #include "AlignmentScore.h"
 
-AlignmentScore operator*(const double r, const AlignmentScore & score) {
-	AlignmentScore answer = score;
+DebugAlignmentScore operator*(const double r, const DebugAlignmentScore & score) {
+	DebugAlignmentScore answer = score;
 	answer.match() *= r;
 	answer.extension() *= r;
 	answer.opening() *= r;

@@ -27,6 +27,11 @@
 // $Id$
 // $Header$
 // $Log$
+// Revision 1.2  2004/06/14 16:38:00  cmbruns
+// Added minus operator
+// renamed AlignmentScore to DebugAlignmentScore
+// sketched mechanism for reverting AlignmentScore to double once testing is complete
+//
 // Revision 1.1  2004/06/07 18:47:02  cmbruns
 // Renamed Score object to AlignmentScore
 //
@@ -43,7 +48,27 @@
 
 using namespace std;
 
-enum AlignmentScoreType {
+// Slow score object for easire debugging
+#define __DEBUG_ALIGNMENT_SCORES__ 1
+#ifdef __DEBUG_ALIGNMENT_SCORES__
+#define AlignmentScore DebugAlignmentScore
+#else
+#define AlignmentScore double
+#define .match() ""
+#define .extension() ""
+#define .opening() ""
+#define .closing() ""
+#define .deletion() ""
+#define .transition() ""
+#define ->match() ""
+#define ->extension() ""
+#define ->opening() ""
+#define ->closing() ""
+#define ->deletion() ""
+#define ->transition() ""
+#endif
+
+enum DebugAlignmentScoreType {
 	MATCH_SCORE,
 	EXTENSION_SCORE,
 	OPENING_SCORE,
@@ -54,7 +79,7 @@ enum AlignmentScoreType {
 
 // Capture details of alignment score
 // Want to be able to replace this class with double for efficiency
-class AlignmentScore {
+class DebugAlignmentScore {
 	
 private:
 	
@@ -97,8 +122,8 @@ public:
 		get_closing() +
 		get_deletion() +
 		get_transition();}
-	AlignmentScore operator+(const AlignmentScore & score2) const {
-		AlignmentScore answer = *this;
+	DebugAlignmentScore operator+(const DebugAlignmentScore & score2) const {
+		DebugAlignmentScore answer = *this;
 		answer.match() += score2.get_match();
 		answer.extension() += score2.get_extension();
 		answer.opening() += score2.get_opening();
@@ -107,16 +132,26 @@ public:
 		answer.transition() += score2.get_transition();
 		return answer;
 	}
-	AlignmentScore & operator+=(const AlignmentScore & score2)  {
+	DebugAlignmentScore operator-(const DebugAlignmentScore & score2) const {
+		DebugAlignmentScore answer = *this;
+		answer.match() -= score2.get_match();
+		answer.extension() -= score2.get_extension();
+		answer.opening() -= score2.get_opening();
+		answer.closing() -= score2.get_closing();
+		answer.deletion() -= score2.get_deletion();
+		answer.transition() -= score2.get_transition();
+		return answer;
+	}
+	DebugAlignmentScore & operator+=(const DebugAlignmentScore & score2)  {
 		*this = *this + score2;
 		return *this;
 	}
-	AlignmentScore & operator*=(const double r)  {
+	DebugAlignmentScore & operator*=(const double r)  {
 		*this = *this * r;
 		return *this;
 	}
-	AlignmentScore operator*(const double r) const {
-		AlignmentScore answer = *this;
+	DebugAlignmentScore operator*(const double r) const {
+		DebugAlignmentScore answer = *this;
 		answer.match() *= r;
 		answer.extension() *= r;
 		answer.opening() *= r;
@@ -136,10 +171,10 @@ public:
 		return os;
 	}
 	
-	AlignmentScore() {
+	DebugAlignmentScore() {
 		clear();
 	}
-	AlignmentScore(AlignmentScoreType score_type, double value) {
+	DebugAlignmentScore(DebugAlignmentScoreType score_type, double value) {
 		clear();
 		switch (score_type) {
 			case MATCH_SCORE:
@@ -166,7 +201,7 @@ public:
 	}	
 };
 
-AlignmentScore operator*(const double r, const AlignmentScore & score);
+DebugAlignmentScore operator*(const double r, const DebugAlignmentScore & score);
 
 class Conservidue;
 
