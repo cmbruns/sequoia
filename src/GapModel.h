@@ -28,6 +28,9 @@
 // $Id$
 // $Header$
 // $Log$
+// Revision 1.4  2004/06/14 16:50:34  cmbruns
+// Renamed Score.h to AlignmentScore.h
+//
 // Revision 1.3  2004/06/04 19:09:06  cmbruns
 // Updated GPL header
 //
@@ -50,7 +53,7 @@
 
 #include <vector>
 #include "Exceptions.h"
-#include "Score.h"
+#include "AlignmentScore.h"
 
 using namespace std;
 

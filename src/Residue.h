@@ -28,6 +28,9 @@
 // $Id$
 // $Header$
 // $Log$
+// Revision 1.6  2004/06/14 16:50:53  cmbruns
+// Renamed Score.h to AlignmentScore.h
+//
 // Revision 1.5  2004/06/04 19:13:45  cmbruns
 // Updated GPL header
 //
@@ -41,7 +44,7 @@
 
 #include <string>
 #include <iostream>
-#include "Score.h"
+#include "AlignmentScore.h"
 
 #define DEFAULT_GAP_OPENING_PENALTY -0.34
 #define DEFAULT_GAP_CLOSING_PENALTY -0.35
