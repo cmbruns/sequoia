@@ -1,9 +1,21 @@
 #include "Score.h"
 #include "MutationMatrix.h"
+#include "SequenceAlignment.h"
 
-float conservidue_pair_score(const Conservidue & c1, const Conservidue & c2) {
+AlignmentScore operator*(const double r, const AlignmentScore & score) {
+	AlignmentScore answer = score;
+	answer.match() *= r;
+	answer.extension() *= r;
+	answer.opening() *= r;
+	answer.closing() *= r;
+	answer.deletion() *= r;
+	answer.transition() *= r;
+	return answer;
+}
+
+AlignmentScore conservidue_pair_score(const Conservidue & c1, const Conservidue & c2) {
 	// Simple sum of pairs formula
-	float answer = 0.0;
+	AlignmentScore answer;
 
 	// nested loops of map iterators seem to cause problems on the Mac
 	// So store the c2 keys in a vector
@@ -37,7 +49,7 @@ float conservidue_pair_score(const Conservidue & c1, const Conservidue & c2) {
 			float sequence_count = weight1 * weight2;
 			float bit_score = blosum62.get_score(*charit1, *charit2);
 
-			answer += sequence_count * bit_score;
+			answer.match() += sequence_count * bit_score;
 		}
 	}
 	
