@@ -1,0 +1,9 @@
+#ifndef __EXCEPTIONS_H__
+#define __EXCEPTIONS_H__
+
+enum Exceptions {
+	CBRUNS_TODO_CODE_EXCEPTION = 100,
+	CBRUNS_DEBUGGING_EXCEPTION
+};
+
+#endif
