@@ -28,8 +28,12 @@
 // $Header$
 //
 // $Log$
-// Revision 1.1  2004/05/11 20:26:12  cmbruns
-// Initial revision
+// Revision 1.2  2004/05/19 00:57:25  cmbruns
+// Added scale score function
+// scale blosum matrix by 1/3 to make it actual bits
+//
+// Revision 1.1.1.1  2004/05/11 20:26:12  cmbruns
+// Initial Max repository for latest sequoia
 //
 // Revision 1.5  2002/09/14 00:02:51  bruns
 // Added license header to most .cc files
@@ -46,10 +50,22 @@
 #include "MutationMatrix.h"
 #include <sstream>
 
-MutationMatrix::MutationMatrix(const char * table) {
+MutationMatrix::MutationMatrix(const char * table, float scale_factor) {
   MutationMatrix & M = *this;
   istringstream is(table);
   is >> M;
+  scale_score(scale_factor);
+}
+
+// Multiply all scores by a scale factor
+void MutationMatrix::scale_score(float scale_factor) {
+	map<string, double>::iterator scoreit;
+	for (scoreit = private_scores.begin();
+		 scoreit != private_scores.end();
+		 scoreit ++) {
+		scoreit->second *= scale_factor;
+	}
+
 }
 
 void MutationMatrix::clear() {
@@ -202,7 +218,8 @@ U -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 10  0  5 \n\
 X  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0 \n\
 * -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4  5  0 10 \n";
 
-MutationMatrix blosum62 = \
+// Entries are 1/3 bits, so multiply by 0.3333 to get bits -> see final argument
+MutationMatrix blosum62(\
 "   A  R  N  D  C  Q  E  G  H  I  L  K  M  F  P  S  T  W  Y  V  B  Z  U  X  *\n\
 A  4 -1 -2 -2  0 -1 -1  0 -2 -1 -1 -1 -1 -2 -1  1  0 -3 -2  0 -2 -1 -2  0 -4 \n\
 R -1  5  0 -2 -3  1  0 -2  0 -3 -2  2 -1 -3 -2 -1 -1 -3 -2 -3 -1  0 -2  0 -4 \n\
@@ -228,5 +245,6 @@ B -2 -1  3  4 -3  0  1 -1  0 -3 -4  0 -3 -3 -2  0 -1 -4 -3 -3  4  1 -2  0 -4 \n\
 Z -1  0  0  1 -3  3  4 -2  0 -3 -3  1 -1 -3 -1  0 -1 -3 -2 -2  1  4 -2  0 -4 \n\
 U -2 -2 -2 -2  2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2  6  0  2 \n\
 X  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0 -4 \n\
-* -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4  2 -4  1 \n";
+* -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4  2 -4  1 \n",
+0.3333);
 
