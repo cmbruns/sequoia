@@ -2,6 +2,25 @@
 
 template class map<const char, float>;
 
+istream & operator>>(istream & is, SequenceAlignment & alignment) {
+	// Read a series of sequences, and paste them together into an alignment
+	while (is.good()) {
+		BioSequence sequence;
+		is >> sequence;
+		if (alignment.length() == 0) { // No sequences have been added yet
+			SequenceAlignment new_alignment(sequence);
+			alignment = new_alignment;
+		}
+		else {
+			if (alignment.length() != (sequence.length() + 1)) {
+				throw ALIGNMENT_LENGTH_MISMATCH_EXCEPTION;
+			}
+			throw CBRUNS_TODO_CODE_EXCEPTION;
+		}
+	}
+	return is;
+}
+
 // ********* Conservidue methods *************
 
 Conservidue::Conservidue(const Residue & residue) {
@@ -9,71 +28,105 @@ Conservidue::Conservidue(const Residue & residue) {
 	weighted_sequence_count = 1.0;  // 
 	residue_counts[residue.one_letter_code()] = 1.0;
 
-	residues.push_back(&residue);
+	const BioSequence * sequence = residue.sequence_pointer();
+	int sequence_number = sequence->alignment_sequence_index;
+	int residue_index = residue.sequence_residue_index;
+	if (sequence_number == 0) {
+		sequence_residues.clear();
+		sequence_residues.push_back(residue_index);
+	}
+	else {
+		sequence_residues.assign(sequence_number, -1);
+		sequence_residues[sequence_number] = residue_index;
+	}
 }
 
-const Residue * Conservidue::sequence_residue(const BioSequence * seq_ptr) const {
-	map<const BioSequence *, const Residue *>::const_iterator it;
-	if ((it = sequence_residues.find(seq_ptr)) != sequence_residues.end()) {
-		const Residue * seq_ptr = it->second;
-		return seq_ptr;
+const Residue * Conservidue::sequence_residue(unsigned int sequence_index) const {
+	int residue_index = sequence_residues[sequence_index];
+	if (residue_index < 0) return NULL; // sequence not found
+	const BioSequence & seq = parent_alignment->sequences[sequence_index];
+	const Residue * res_ptr = & seq[residue_index];
+	return res_ptr;
+}
+
+// Create a combined conservidue from the alignment of two matching conservidues
+Conservidue Conservidue::combine_conservidues(const Conservidue & conservidue2) const {
+	const Conservidue & conservidue1 = *this;
+	Conservidue answer = conservidue1;
+	
+	float weight1 = conservidue1.weighted_sequence_count;
+	float weight2 = conservidue2.weighted_sequence_count;
+	float total_weight = weight1 + weight2;
+	weight1 = weight1 / total_weight;
+	weight2 = weight2 / total_weight;
+
+	answer.weighted_sequence_count += conservidue2.weighted_sequence_count;
+	answer.gap_opening_penalty += conservidue2.gap_opening_penalty;
+	answer.gap_closing_penalty += conservidue2.gap_closing_penalty;
+	answer.gap_extension_penalty += conservidue2.gap_extension_penalty;
+	answer.gap_deletion_penalty += conservidue2.gap_deletion_penalty;
+	answer.gap_opening_penalty += conservidue2.gap_opening_penalty;
+	answer.parent_alignment = NULL;
+	
+	// Fold in sequence to residues hash
+	for (unsigned int i = 0; i < conservidue2.sequence_residues.size(); i++) {
+		answer.sequence_residues.push_back(conservidue2.sequence_residues[i]);
 	}
-	else return NULL; // sequence not found
+
+	// Fold in residue type counts hash
+	map<char, float>::const_iterator res_count2;
+	for (res_count2 = conservidue2.residue_counts.begin();
+		 res_count2 != conservidue2.residue_counts.end();
+		 res_count2 ++) {
+		answer.residue_counts[res_count2->first] += res_count2->second;
+	}
+	
+	return answer;
 }
 
 // ********* SequenceAlignment methods *************
 
-SequenceAlignment::SequenceAlignment(const BioSequence & seq) :
+SequenceAlignment::SequenceAlignment(const BioSequence & seq0) :
 	left_gap_factor(DEFAULT_LEFT_GAP_FACTOR),
 	right_gap_factor(DEFAULT_RIGHT_GAP_FACTOR),
 	left_gap_extension_factor(DEFAULT_LEFT_GAP_EXTENSION_FACTOR),
-	right_gap_extension_factor(DEFAULT_RIGHT_GAP_EXTENSION_FACTOR) {
-
+	right_gap_extension_factor(DEFAULT_RIGHT_GAP_EXTENSION_FACTOR),
+	pair_alignment_score (0) 
+{
+	sequences.clear();
+	add_sequence(seq0);
+	BioSequence & seq = sequences.back(); // Use actual stored sequence copy from now on
+	int sequence_index = sequences.size() - 1;
+		
 	conservidues.clear(); // delete previous contents
 	begins.clear();
 	ends.clear();
 
-	macromolecule = seq.macromolecule; // 
-	sequences.push_back(&seq); // Store pointer to sequence
-
-	// Add "begin" conservidue
+	// Add "begin" conservidue - does not actually contain residues (but end does!)
 	Conservidue begin_conservidue;
-	begin_conservidue.array_sequence_index = 0;
-	begin_conservidue.is_initial = true;
-	begin_conservidue.is_final = false;
-	begin_conservidue.parent_alignment = this;
-	
-	conservidues.push_back(begin_conservidue); // Commit conservidue to array
+	add_conservidue(begin_conservidue);
 	Conservidue * current_conservidue_pointer =  & conservidues.back(); // For storing sequential pointers
-	begins.push_back(current_conservidue_pointer);
 	
 	// Loop over residues in the sequence
-	Conservidue * previous_conservidue_pointer =  & conservidues.back();
 	int i;
 	for (i = 0; i < seq.length(); ++i) {
+		const Residue & residue = seq[i];
+		Conservidue current_conservidue0(residue); // initialize from single residue
+		add_conservidue(current_conservidue0);
+		Conservidue & current_conservidue = conservidues.back();
 		
-		Conservidue current_conservidue(seq[i]); // initialize from single residue
-
 		// store sequence/residue relationship in conservidue
-		current_conservidue.sequence_residues[&seq] = &(seq[i]);
+		current_conservidue.sequence_residues[sequence_index] = i;
 
-		current_conservidue.array_sequence_index = i + 1;
-		current_conservidue.is_initial = false; // in sequence, begin is defined above
-		current_conservidue.is_final = false;
-		current_conservidue.parent_alignment = this;
-		// current_conservidue.residue_counts[seq[i].one_letter_code()] = 1.0;
-			
 		// Set up links for linear sequence
 		ConserviduePredecessor back_link;
-		back_link.predecessor_conservidue = previous_conservidue_pointer;
-		back_link.transition_score = 0; // no penalty for following normal sequence		
+		back_link.predecessor_conservidue = i;
+		back_link.transition_score = 0; // no penalty for following normal sequence
+		current_conservidue.predecessors.clear();
 		current_conservidue.predecessors.push_back(back_link); // Link to previous conservidue
 		
-		conservidues.push_back(current_conservidue); // Commit conservidue to array
-
 		// Update for next round
-		current_conservidue_pointer = & conservidues.back(); // Will this pointer remain valid?		
-		previous_conservidue_pointer = current_conservidue_pointer;
+		current_conservidue_pointer = & current_conservidue; // Will this pointer remain valid?		
 	}
 
 	// Perhaps final empty conservidue is a bad idea
@@ -87,41 +140,94 @@ SequenceAlignment::SequenceAlignment(const BioSequence & seq) :
 
 		// Set up links for linear sequence
 		ConserviduePredecessor back_link;
-		back_link.predecessor_conservidue = previous_conservidue_pointer;
+		back_link.predecessor_conservidue = seq.length();
 		back_link.transition_score = 0; // no penalty for following normal sequence		
 		final_conservidue.predecessors.push_back(back_link); // Link to previous conservidue
 	
 		conservidues.push_back(final_conservidue); // Commit conservidue to array
 		current_conservidue_pointer =  & conservidues.back(); // For storing sequential pointers
-		ends.push_back(current_conservidue_pointer); // Note final conservidue of sequence
+		ends.push_back(final_conservidue.array_sequence_index); // Note final conservidue of sequence
 	}
 	else { // Simply declare final actual conservidue final
-		current_conservidue_pointer->is_final = true;
-		ends.push_back(current_conservidue_pointer);
 	}
 }
 
-// simple string output routine
+// simple pretty alignment output routine
 ostream & operator<<(ostream & os, const SequenceAlignment & s) {
-	// TODO - loop over line length, sequences, and conservidues
-	vector<const BioSequence *>::const_iterator seq; // Sequences in alignment
-	for (seq = s.sequences.begin(); seq != s.sequences.end(); ++seq) {
-		const BioSequence * seq_ptr = *seq;
-		vector<Conservidue>::const_iterator cons; // Conservidues in alignment
-		for (cons = s.conservidues.begin(); 
-			 cons != s.conservidues.end(); 
-			 ++cons) {
-			const Conservidue & conservidue = * cons;
 
-			if (conservidue.is_initial) continue;
-			if (conservidue.is_final) continue;
+	// Pretty alignment output
 
-			const Residue * res_ptr = conservidue.sequence_residue(seq_ptr);
-			os << res_ptr->one_letter_code();
-		}
-		os << endl;  // end of one sequence
+	unsigned int line_length = 60;
+	unsigned int conservidue_number = 0;
+	unsigned int sequence_number = 0;
+
+	os << "Alignment score = " << s.pair_alignment_score << endl;
+	
+	// Print sequence summary
+	for (sequence_number = 0; sequence_number < s.sequences.size(); ++sequence_number) {
+		const BioSequence & seq = s.sequences[sequence_number];
+		os << sequence_number + 1 << ":\t";
+		os << seq.get_id() << "\t";
+		os << seq.get_title() << endl;
 	}
+	os << endl;
+	
+	// Keep track of current residue number
+	vector<int> sequence_residue_numbers(s.sequences.size(), 0);
 
+	// loop over line length, sequences, and conservidues
+	while (conservidue_number < s.conservidues.size()) {  // number at start of block
+		unsigned int block_conservidue_number = conservidue_number;
+		// final fake "sequence" indicates summary row for each block
+		for (sequence_number = 0; sequence_number <= s.sequences.size(); ++sequence_number) {
+
+			if (sequence_number == s.sequences.size())  // Summary row
+			  os << "  " << " \t";
+			else os << sequence_number + 1 << ":\t";
+							
+			const Residue * residue;
+			block_conservidue_number = conservidue_number;
+			for (unsigned int column = 0; column < line_length; column ++) {
+				// Skip "begin" conservidues
+				while ((block_conservidue_number < s.conservidues.size()) &&
+					   (s.conservidues[block_conservidue_number].is_initial)) {
+					block_conservidue_number ++;
+				}
+				if ((block_conservidue_number) >= s.conservidues.size()) break;
+				const Conservidue & conservidue = s.conservidues[block_conservidue_number];
+
+				if (sequence_number == s.sequences.size()) { // Summary row
+					if ((conservidue.residue_counts.size() == 1) &&
+						(conservidue.residue_counts.begin()->second > 1.0))
+						os << '*'; // identical column
+					else os << ' '; // non-identical column
+				}
+				else { // normal sequence row, not summary
+					residue = conservidue.sequence_residue(sequence_number); // doesn't work
+					if (residue == NULL)  os << '-';
+					else {
+						os << *residue;
+						sequence_residue_numbers[sequence_number] = residue->get_residue_number();
+					}
+				}
+
+				block_conservidue_number ++;
+			}
+			
+			// show residue number
+			if (sequence_number == s.sequences.size()) {} // Summary row
+			else os << "  " << sequence_residue_numbers[sequence_number];
+
+			// End of one sequence line in alignment
+			os << endl;
+			
+		}
+
+		os << endl; // break between sections
+
+		conservidue_number = block_conservidue_number;
+	}
+	
 	return os;
 }
 
