@@ -27,6 +27,9 @@
 // $Id$
 // $Header$
 // $Log$
+// Revision 1.3  2004/06/14 16:42:19  cmbruns
+// Numerous new members and functions to handle details of profile gap penalties, toward matching sum of pairs score
+//
 // Revision 1.2  2004/06/04 19:06:10  cmbruns
 // Updated GPL header
 //
@@ -45,7 +48,7 @@
 
 #include <map>
 #include <vector>
-#include "Score.h"
+#include "AlignmentScore.h"
 #include "GapModel.h"
 #include "BioSequence.h"
 
@@ -84,16 +87,41 @@ protected:
 	vector<ConserviduePredecessor> predecessors;
 	
 	double weighted_sequence_count; // sum over all sequence weights with non-gaps
-	double weighted_internal_gap_count;
-	double weighted_left_end_gap_count;
-	double weighted_right_end_gap_count;
+	double weighted_gap_count; // TODO sum over all sequence weights with gaps
 	
-	// left_end + right_end + internal = weighted_sequence_count
-	double weighted_left_end_sequence_count;  // count of initial residues
-	double weighted_right_end_sequence_count; // count of final residues
-	double weighted_internal_sequence_count; // count of internal residues
-	double gap_open_count; // sequences with gap here, amino acid before
-	double gap_close_count; // sequences with gap here, amino acid after
+	// efficiency variables for sum of pairs
+	// the variables with "scaled_" in the name are pre-adjusted for special end-gap weighting
+	double scaled_extension_gap_count; // internal + left * factor + right * factor
+	double scaled_gap_count; // needed?
+	double scaled_gap_open_count; // needed?
+	double scaled_gap_close_count;
+	double scaled_extension_left_sequence_count; // also scaled by gap factor, like gap counts
+	double scaled_left_sequence_count; // also scaled by gap factor, like gap counts
+	double scaled_extension_right_sequence_count; // also scaled by gap factor, like gap counts
+	double scaled_right_sequence_count; // also scaled by gap factor, like gap counts
+	double scaled_extension_gap_open_count;
+	double scaled_extension_gap_close_count;
+
+	double final_scaled_gap_count;
+	double final_scaled_sequence_count;
+	double final_scaled_extension_gap_count;
+	double final_scaled_extension_sequence_count;
+	double initial_scaled_gap_count;
+	double initial_scaled_sequence_count;
+	double initial_scaled_extension_gap_count;
+	double initial_scaled_extension_sequence_count;
+	
+	// For initial gap deletion
+	double initial_sequence_count;
+	double initial_gap_count; // TODO
+	AlignmentScore initial_scaled_gap_deletion_penalty;
+	// AlignmentScore initial_scaled_gap_deletion_penalty_opens; // TODO
+	
+	AlignmentScore scaled_gap_deletion_penalty;
+	AlignmentScore scaled_gap_deletion_penalty_opens; // gap open positions only
+
+	AlignmentScore final_gap_closing_penalty; // Only final residues of sequences
+	AlignmentScore initial_gap_opening_penalty; // Only initial residues of sequences
 	
 	AlignmentScore gap_opening_penalty; // -log2 probability of loop beginning with this Conservidue
 	AlignmentScore gap_closing_penalty; // -log2 probability of loop before this Conservidue
@@ -107,7 +135,7 @@ protected:
 	// array value is residue number in sequence
 	// value -1 means no such sequence in conservidue
 	vector<int> sequence_residues; // ALERT - assumes that each conservidue has at most one residue from each sequence
-	vector<int> sequence_changes; // which sequences change their presence status vs.the previous residue
+	// vector<int> sequence_changes; // which sequences change their presence status vs.the previous residue
 	
 	map<char, float> residue_counts; // weighted by sequence weights
 	vector<float> residue_score_counts; // precomputed score for each amino acid in alignment partner
@@ -123,29 +151,31 @@ public:
 	// Member functions
 
 	// Populate an "empty" indel conservidue to be placed after the subject conservidue
-	Conservidue indel_conservidue() const;
+	Conservidue indel_conservidue(bool is_first_indel) const;
 	
 	// Precomputed score vector for efficient match score computation
-	float get_residue_score_count(char amino_acid) const {
-		int index = toupper(amino_acid - 'A');
-		if (index < 0) return 0;
-		if (index > ('Z' - 'A')) return 0;
-		return residue_score_counts[index];
-	}
-	float & residue_score_count(char amino_acid) {
-		int index = toupper(amino_acid - 'A');
-		if (index < 0) throw 99;
-		if (index > ('Z' - 'A')) throw 99;
-		return residue_score_counts[index];
-	}
+	float get_residue_score_count(char amino_acid) const;
+	float & residue_score_count(char amino_acid);
 	
 	Conservidue combine_conservidues(const Conservidue & conservidue2) const; // for aligned conservidues
 
 	// Support functions for alignment scores
 	AlignmentScore match_score(const Conservidue & conservidue2) const;
+	AlignmentScore initial_gap_extension_score(const Conservidue & c2, unsigned int gseg) const;
 	AlignmentScore match_gap_extension_score(const Conservidue & conservidue2, unsigned int gseg) const;
+	AlignmentScore new_gap_extension_score(const Conservidue & c2, unsigned int gseg) const;
+	AlignmentScore initial_gap_opening_score(const Conservidue & c2, unsigned int gseg) const;
+	AlignmentScore match_gap_opening_score(const Conservidue & c2, unsigned int gseg) const;
+	AlignmentScore new_gap_opening_score(const Conservidue & c2, unsigned int gseg) const;
+	AlignmentScore new_gap_deletion_score(const Conservidue & c2, unsigned int gseg) const;
+	AlignmentScore match_gap_closing_score(const Conservidue & c2, unsigned int gseg) const;
+	AlignmentScore new_gap_closing_score(const Conservidue & c2, unsigned int gseg) const;
+	AlignmentScore final_match_gap_closing_score(const Conservidue & c2, unsigned int gseg) const;
+	AlignmentScore final_new_gap_closing_score(const Conservidue & c2, unsigned int gseg) const;
+	AlignmentScore initial_match_gap_opening_score(const Conservidue & c2, unsigned int gseg) const;
+	AlignmentScore initial_new_gap_opening_score(const Conservidue & c2, unsigned int gseg) const;
 
-	// Piecewise linear gap model	
+	// Piecewise linear gap model
 	AlignmentScore gap_extension_penalty(unsigned int gseg) const;
 	AlignmentScore gap_open_offset(unsigned int gseg) const;
 	AlignmentScore gap_close_offset(unsigned int gseg) const;
