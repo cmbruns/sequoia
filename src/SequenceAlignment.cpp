@@ -3,27 +3,27 @@
 template class map<const char, float>;
 
 istream & operator>>(istream & is, SequenceAlignment & alignment) {
+	alignment.load_fasta(is);
+	return is;
+}
+
+// Load sequence alignment from fasta file
+istream & SequenceAlignment::load_fasta(istream & is) {
+	SequenceAlignment & alignment = *this;
 	// Read a series of sequences, and paste them together into an alignment
 	while (is.good()) {
 		BioSequence sequence;
 		is >> sequence;
-		if (alignment.length() == 0) { // No sequences have been added yet
-			SequenceAlignment new_alignment(sequence);
-			alignment = new_alignment;
-		}
-		else {
-			if (alignment.length() != (sequence.length() + 1)) {
-				throw ALIGNMENT_LENGTH_MISMATCH_EXCEPTION;
-			}
-			throw CBRUNS_TODO_CODE_EXCEPTION;
-		}
+		alignment.add_sequence_automatic(sequence);
 	}
 	return is;
 }
 
 // ********* Conservidue methods *************
 
-Conservidue::Conservidue(const Residue & residue) {
+Conservidue::Conservidue(const Residue & residue) :
+	p_gap_parameter(protein_gap_model) 
+{
 	initialize_members();
 	weighted_sequence_count = 1.0;  // 
 	residue_counts[residue.one_letter_code()] = 1.0;
@@ -63,7 +63,7 @@ Conservidue Conservidue::combine_conservidues(const Conservidue & conservidue2) 
 	answer.weighted_sequence_count += conservidue2.weighted_sequence_count;
 	answer.gap_opening_penalty += conservidue2.gap_opening_penalty;
 	answer.gap_closing_penalty += conservidue2.gap_closing_penalty;
-	answer.gap_extension_penalty += conservidue2.gap_extension_penalty;
+	answer.p_gap_parameter = conservidue1.p_gap_parameter.combine(conservidue2.p_gap_parameter);
 	answer.gap_deletion_penalty += conservidue2.gap_deletion_penalty;
 	answer.gap_opening_penalty += conservidue2.gap_opening_penalty;
 	answer.parent_alignment = NULL;
@@ -108,8 +108,7 @@ SequenceAlignment::SequenceAlignment(const BioSequence & seq0) :
 	Conservidue * current_conservidue_pointer =  & conservidues.back(); // For storing sequential pointers
 	
 	// Loop over residues in the sequence
-	int i;
-	for (i = 0; i < seq.length(); ++i) {
+	for (unsigned int i = 0; i < seq.length(); ++i) {
 		const Residue & residue = seq[i];
 		Conservidue current_conservidue0(residue); // initialize from single residue
 		add_conservidue(current_conservidue0);
@@ -154,7 +153,12 @@ SequenceAlignment::SequenceAlignment(const BioSequence & seq0) :
 
 // simple pretty alignment output routine
 ostream & operator<<(ostream & os, const SequenceAlignment & s) {
+	s.print_pretty(os);
+	return os;
+}
 
+ostream & SequenceAlignment::print_pretty(ostream & os) const {
+	const SequenceAlignment & s = *this;
 	// Pretty alignment output
 
 	unsigned int line_length = 60;
@@ -207,7 +211,8 @@ ostream & operator<<(ostream & os, const SequenceAlignment & s) {
 					if (residue == NULL)  os << '-';
 					else {
 						os << *residue;
-						sequence_residue_numbers[sequence_number] = residue->get_residue_number();
+						if (! residue->is_gap()) // Update sequence number for end of line
+							sequence_residue_numbers[sequence_number] = residue->get_residue_number();
 					}
 				}
 
