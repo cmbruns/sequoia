@@ -8,6 +8,12 @@ using namespace std;
 
 int main (int argc, char * const argv[]) {
 
+	SequenceAlignment true_alignment;
+	ifstream true_infile("fnr_pdr_true.fasta");
+	true_infile >> true_alignment;
+	true_infile.close();
+	cout << true_alignment << endl;
+
 	// Read first sequence file
 	const char * infile1_name = "seq1.fasta";
 	ifstream infile1(infile1_name);
@@ -17,9 +23,7 @@ int main (int argc, char * const argv[]) {
 	}
 	SequenceAlignment a1;
 	infile1 >> a1;
-	
-	cout << a1;
-	
+
 	// Read second sequence file
 	const char * infile2_name = "seq2.fasta";
 	ifstream infile2(infile2_name);
@@ -29,20 +33,12 @@ int main (int argc, char * const argv[]) {
 	}
 	SequenceAlignment a2;
 	infile2 >> a2;
+	infile2.close();
 	
-	cout << a2;
+	SequenceAlignment a3;
+	a3 = a1.align(a2, ALIGN_LOCAL);
+	cout << a3 << endl;
+	cout << "Sensitivity = " << a3.report_accuracy(true_alignment) << endl;
 
-	// Write aligned sequence file
-	const char * outfile_name = "align.fasta";
-	ofstream outfile (outfile_name);
-	if (outfile == 0) {
-		cerr << "*** ERROR *** : Unable to open file " << outfile_name << endl;
-		return NO_SUCH_FILE_EXCEPTION;
-	}
-	SequenceAlignment a3 = a2.align(a1);
-	outfile << a3; // The heavy lifting is in this line
-
-	cout << a3;
-	
     return 0;
 }
