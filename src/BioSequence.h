@@ -30,6 +30,9 @@
 // $Header$
 //
 // $Log$
+// Revision 1.6  2004/06/14 16:39:02  cmbruns
+// Raised default end gap factors from 0.5 to 0.75 for easier testing diagnostics
+//
 // Revision 1.5  2004/06/04 19:02:35  cmbruns
 // Updated GPL header
 //
@@ -89,8 +92,8 @@
 #include "Residue.h"
 #include "GapModel.h"
 
-#define DEFAULT_LEFT_GAP_FACTOR 0.5
-#define DEFAULT_RIGHT_GAP_FACTOR 0.5
+#define DEFAULT_LEFT_GAP_FACTOR 0.75
+#define DEFAULT_RIGHT_GAP_FACTOR 0.75
 #define DEFAULT_LEFT_GAP_EXTENSION_FACTOR 0.1
 #define DEFAULT_RIGHT_GAP_EXTENSION_FACTOR 0.1
 
