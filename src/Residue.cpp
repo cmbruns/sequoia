@@ -32,7 +32,8 @@ string Glutambiguous::p_three_letter_code = "Glx";
 // Functions 
 
 AminoAcid * new_protein_residue(const char one_letter_code) {
-	switch (one_letter_code) {
+	char olc = toupper(one_letter_code);
+	switch (olc) {
 		case 'A': return new Alanine;
 		case 'B': return new Asparambiguous;
 		case 'C': return new Cysteine;
@@ -58,6 +59,11 @@ AminoAcid * new_protein_residue(const char one_letter_code) {
 		case 'Z': return new Glutambiguous;
 		default: return new AminoAcid; // unknown
 	}
+}
+
+ostream & operator<<(ostream & os, const Residue & residue) {
+	os << residue.one_letter_code();
+	return os;
 }
 
 
