@@ -21,13 +21,14 @@
 #include <iostream>
 #include "BioSequence.h"
 #include "AlignmentMethod.h"
+#include "Exceptions.h"
 
 using namespace std; // So STL stuff will work in the traditional way
 
-#define DEFAULT_LEFT_GAP_FACTOR 1.0
-#define DEFAULT_RIGHT_GAP_FACTOR 1.0
-#define DEFAULT_LEFT_GAP_EXTENSION_FACTOR 1.0
-#define DEFAULT_RIGHT_GAP_EXTENSION_FACTOR 1.0
+#define DEFAULT_LEFT_GAP_FACTOR 0.5
+#define DEFAULT_RIGHT_GAP_FACTOR 0.5
+#define DEFAULT_LEFT_GAP_EXTENSION_FACTOR 0.0
+#define DEFAULT_RIGHT_GAP_EXTENSION_FACTOR 0.0
 
 // Alignment space determines the alignment method.
 // For protein sequences, it should always be protein
@@ -48,7 +49,7 @@ class ConserviduePredecessor {
 	friend class SequenceAlignment;
 	friend class ConservidueAlignment;
 protected:
-	Conservidue * predecessor_conservidue;
+	unsigned int predecessor_conservidue;
 	double transition_score; // log2(probability of taking this path), 0.0 for a normal sequence
 };
 
@@ -81,8 +82,13 @@ protected:
 	vector<ConserviduePredecessor> predecessors;
 
 	float weighted_sequence_count; // sum over all sequence weights
-	vector<const Residue *> residues;
-	map<const BioSequence *, const Residue *> sequence_residues; // ALERT - assumes that each conservidue has at most one residue from each sequence
+	// vector<const Residue *> residues; // do we need this, with sequence residues?
+
+	// There is a public accessor for this
+	// array index is sequence number in alignment
+	// array value is residue number in sequence
+	// value -1 means no such sequence in conservidue
+	vector<int> sequence_residues; // ALERT - assumes that each conservidue has at most one residue from each sequence
 
 	void initialize_members() {
 		gap_opening_penalty = -1.1;
@@ -97,13 +103,16 @@ protected:
 	}
 public:
 	int array_sequence_index; // actual order of Conservidue in parent sequence
-	// Given a sequence, return the residue that is in this conservidue (for printing)
-	const Residue * sequence_residue(const BioSequence * seq_ptr) const;
 	map<char, float> residue_counts; // weighted by sequence weights
 	bool is_initial; // Conservidue has no predecessors, fake Conservidue to indicate start state
 	bool is_final; // Conservidue has no successors, fake Conservidue to indicate stop state
 
-	ostream & print(ostream & os, unsigned int indent_size) const {
+	// Given a sequence, return the residue that is in this conservidue (for printing)
+	const Residue * sequence_residue(unsigned int sequence_number) const;
+
+	Conservidue combine_conservidues(const Conservidue & conservidue2) const; // for aligned conservidues
+	
+	ostream & print_debug(ostream & os = cout, unsigned int indent_size = 0) const {
 		string indent = "";
 		for(unsigned int i=0;i<indent_size;i++)indent += " ";
 
@@ -123,6 +132,11 @@ public:
 		for (count = residue_counts.begin(); count != residue_counts.end(); count++) {
 			os << indent << "  " << count->first << ": " << count->second << endl;
 		}
+		os << indent << "Sequence residues:" << endl;
+		for (unsigned int i = 0; i < sequence_residues.size(); i++) {
+			os << indent << "  sequence " << i << ", residue " << sequence_residues[i] << endl;
+		}
+		
 		return os;
 	}
 	
@@ -137,43 +151,143 @@ public:
 // is cast as a SequenceAlignment before it get aligned to other stuff.
 class SequenceAlignment {
 	friend class ConservidueAlignment;
+	friend class Conservidue;
 	// simple string output routine
 	friend ostream & operator<<(ostream & os, const SequenceAlignment & s);
 protected:
-	vector<Conservidue> conservidues; // ALERT - every Conservidue's precursors must appear before the Conservidue itself
-	vector<Conservidue *> begins; 
-	vector<Conservidue *> ends;
-	Macromolecule macromolecule; // of PROTEIN, DNA, RNA, XNA/NUCLEOTIDE, MRNA/CDNA, GENOMIC
-	vector<const BioSequence *> sequences;
-	
 	// Scale scores of end gaps by this amount, but not extensions
 	double left_gap_factor; // coefficient for left end gaps, other than extensions
 	double right_gap_factor; // coefficient for right end gaps, other than extensions
 	// Additional scale factor applies only to extension portion of gap penalty
 	double left_gap_extension_factor;
-	double right_gap_extension_factor;
+	double right_gap_extension_factor;	
+
+	vector<Conservidue> conservidues; // ALERT - every Conservidue's precursors must appear before the Conservidue itself
+	vector<unsigned int> begins; 
+	vector<unsigned int> ends;
+	vector<BioSequence> sequences;
 	
+	double pair_alignment_score; // Score resulting from most recent alignment
+								 // as opposed to sum of pairs score
+
 public:
+	int length() const {return conservidues.size();}
+	const Conservidue & operator[](int i) const {return conservidues.at(i);}
+	
+	// Core profile alignment routine
+	// See AlignmentMethod.cpp for implementation
+	SequenceAlignment SequenceAlignment::align(const SequenceAlignment & seq2) const;
+
+	void add_sequence(const BioSequence & sequence) { // does not automatically update conservidues!!
+		sequences.push_back(sequence);
+		int sequence_index = sequences.size() - 1;
+		sequences.back().alignment_sequence_index = sequence_index;
+		sequences.back().parent_alignment = this;
+	}
+	
+	void add_conservidue(const Conservidue & c, unsigned int sequence_index_offset = 0) {
+		conservidues.push_back(c);
+		Conservidue & conservidue = conservidues.back();
+		int conservidue_index = conservidues.size() - 1;
+		conservidue.array_sequence_index = conservidue_index;
+		conservidue.parent_alignment = this;
+						
+		// TODO - I need a smarter predecessor method for POA alignments
+		if (conservidue_index == 0) {
+			conservidue.is_initial = true;
+
+			begins.clear();
+			begins.push_back(conservidue_index);
+			ends.clear();
+			ends.push_back(conservidue_index);
+		}
+		else {
+			conservidue.is_initial = false;
+			conservidues[conservidue_index - 1].is_final = false;
+		}
+		conservidue.is_final = true;
+		ends[0] = conservidue_index;
+
+		// Predecessor link
+		ConserviduePredecessor pred;
+		pred.transition_score = 0;
+		pred.predecessor_conservidue = conservidue_index - 1;
+		vector<ConserviduePredecessor> pred_vector(1,pred);
+		conservidue.predecessors = pred_vector;
+
+		// Sanity check sequence_residue mapping
+		conservidue.sequence_residues.assign(sequences.size(), -1);
+		for (unsigned int sr = 0; sr < c.sequence_residues.size(); sr ++) {
+			if ((sr + sequence_index_offset) < conservidue.sequence_residues.size()) {
+				conservidue.sequence_residues[sr + sequence_index_offset] = c.sequence_residues[sr];
+			} else {
+				throw 99; // something is wrong with sequence_residues logic
+			}
+		}
+	}
+
+	ostream & print_debug(ostream & os = cout, unsigned int indent_size = 0) const {
+		string indent = "";
+		for(unsigned int i=0;i<indent_size;i++)indent += " ";
+		
+		os << indent << "alignment pointer = " << this << endl;
+		os << indent << "left_gap_factor = " << left_gap_factor << endl;
+		os << indent << "right_gap_factor = " << right_gap_factor << endl;
+		os << indent << "left_gap_extension_factor = " << left_gap_extension_factor << endl;
+		os << indent << "right_gap_extension_factor = " << right_gap_extension_factor << endl;
+
+		os << indent << "pair_alignment_score = " << pair_alignment_score << endl;
+		os << indent << "Conservidues:" << endl;
+		for (unsigned int i = 0; i < conservidues.size(); i++) {
+			conservidues[i].print_debug(os, indent_size + 2);
+			os << endl;
+		}
+		os << indent << "Sequences:" << endl;
+		for (unsigned int i = 0; i < sequences.size(); i++) {
+			sequences[i].print_debug(os, indent_size + 2);
+		}
+		
+		return os;
+	}
+	
 	SequenceAlignment() : 
 		left_gap_factor(DEFAULT_LEFT_GAP_FACTOR),
 		right_gap_factor(DEFAULT_RIGHT_GAP_FACTOR),
 		left_gap_extension_factor(DEFAULT_LEFT_GAP_EXTENSION_FACTOR),
-		right_gap_extension_factor(DEFAULT_RIGHT_GAP_EXTENSION_FACTOR)
+		right_gap_extension_factor(DEFAULT_RIGHT_GAP_EXTENSION_FACTOR),
+		pair_alignment_score(0)
 	{} // simple constructor
-
 	SequenceAlignment(const BioSequence & seq);
+
+	// need assignment operator and copy constructor so that conservidue.parent_alignment pointers are properly set
+	SequenceAlignment(const SequenceAlignment & alignment2) {
+		*this = alignment2;
+	}
 	
-	int length() const {return conservidues.size();}
-	const Conservidue & operator[](int i) const {return conservidues.at(i);}
+	SequenceAlignment & operator=(const SequenceAlignment & alignment2) {
+		if (this == &alignment2) return *this;
+		begins = alignment2.begins;
+		ends = alignment2.ends;
+		left_gap_factor = alignment2.left_gap_factor;
+		right_gap_factor = alignment2.right_gap_factor;
+		left_gap_extension_factor = alignment2.left_gap_extension_factor;
+		right_gap_extension_factor = alignment2.right_gap_extension_factor;
+		pair_alignment_score = alignment2.pair_alignment_score;
+
+		sequences.clear();
+		for (unsigned int i = 0; i < alignment2.sequences.size(); i++) {
+			add_sequence(alignment2.sequences[i]);
+		}
+
+		conservidues.clear();
+		for (unsigned int i = 0; i < alignment2.conservidues.size(); i++) {
+			add_conservidue(alignment2.conservidues[i]);
+		}
+		
+		return *this;
+	}
 };
 
-istream & operator>>(istream & is, SequenceAlignment & alignment) {
-	// Read a series of sequences, and paste them together into an alignment
-	while (is.good()) {
-		BioSequence sequence;
-		is >> sequence;
-	}
-	return is;
-}
+istream & operator>>(istream & is, SequenceAlignment & alignment);
 
 #endif
