@@ -1,7 +1,6 @@
-// $Id$
 // This file is part of the Sequoia package for macromolecular 
 //  sequence/structure analysis
-// Copyright (C) 2002  Christopher M. Bruns, Ph.D.
+// Copyright (C) 2004  Christopher M. Bruns, Ph.D.
 // 
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -19,15 +18,21 @@
 // 
 // See the accompanying file 'LICENSE' for details
 // 
-// To contact the author, write to cmbruns@attbi.com or bruns@scripps.edu
+// To contact the author, write to cmbruns@comcast.net or bruns@scripps.edu
 // In publications please cite: Bruns et al (1999), J.Mol.Biol. 288:427-439
 // Please submit bug reports at http://bruns.homeip.net/bugzilla/
+// 
+// To obtain a non-GPL version of this program, see http://bruns.homeip.net/sequoia.html
+// 
 // 
 // $Id$
 //
 // $Header$
 //
 // $Log$
+// Revision 1.5  2004/06/04 19:02:35  cmbruns
+// Updated GPL header
+//
 // Revision 1.4  2004/05/28 19:36:29  cmbruns
 // Match and extension components of sum-of-pairs are correct in profile alignment.
 // Open, close and Delete components are still lower bounds
@@ -74,6 +79,7 @@
 // Revision 1.2  2001/11/15 20:19:55  bruns
 // Added cvs tags up through FastaSequence.h
 //
+
 #ifndef _BIOSEQUENCE_H_
 #define _BIOSEQUENCE_H_
 
