@@ -1,3 +1,45 @@
+// This file is part of the Sequoia package for macromolecular 
+//  sequence/structure analysis
+// Copyright (C) 2004  Christopher M. Bruns, Ph.D.
+// 
+// This program is free software; you can redistribute it and/or
+// modify it under the terms of the GNU General Public License
+// as published by the Free Software Foundation; either version 2
+// of the License, or (at your option) any later version.
+// 
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+// 
+// You should have received a copy of the GNU General Public License
+// along with this program; if not, write to the Free Software
+// Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+// 
+// See the accompanying file 'LICENSE' for details
+// 
+// To contact the author, write to cmbruns@comcast.net or bruns@scripps.edu
+// In publications please cite: Bruns et al (1999), J.Mol.Biol. 288:427-439
+// Please submit bug reports at http://bruns.homeip.net/bugzilla/
+// 
+// To obtain a non-GPL version of this program, see http://bruns.homeip.net/sequoia.html
+// 
+
+// $Id$
+// $Header$
+// $Log$
+// Revision 1.6  2004/06/04 19:31:10  cmbruns
+// Updated GPL header
+//
+// Moved constructor methods to end of file
+//
+// Added initialize_from_pdb
+//
+// Moved all Conservidue functions to their own file Conservidue.h
+//
+// Enhanced pair score to work for local alignments, and to partially work for GAP_DIVERGENCE alignments.  TODO
+//
+
 /*
  *  SequenceAlignment.h
  *  sequoia4
@@ -23,10 +65,14 @@
 #include "BioSequence.h"
 #include "AlignmentMethod.h"
 #include "Exceptions.h"
-#include "GapModel.h"
+// #include "GapModel.h"
+#include "Conservidue.h"
+#include "PDBEntry.h"
 
 using namespace std; // So STL stuff will work in the traditional way
 
+// TODO - eliminates sequences from SequenceAlignment
+// TODO - eliminate end gap parameters from SequenceAlignment (leave in BioSequence)
 
 // Alignment space determines the alignment method.
 // For protein sequences, it should always be protein
@@ -40,88 +86,6 @@ enum AlignmentSpace {
 };
 
 class Conservidue; // short declaration
-
-// Class to capture the transition between one residue and its predecessors
-class ConserviduePredecessor {
-	friend class Conservidue;
-	friend class SequenceAlignment;
-	friend class ConservidueAlignment;
-protected:
-	unsigned int predecessor_conservidue;
-	AlignmentScore transition_score; // log2(probability of taking this path), 0.0 for a normal sequence
-};
-
-// A single residue or a set of aligned residues in a sequence alignment.
-// Corresponds to one column of a multiple sequence alignment
-// TODO - make this conservidue contain multiple residues
-class Conservidue {
-	friend class SequenceAlignment;
-	friend class ConservidueAlignment;
-protected:
-
-	//  Diagram of a typical alignment gap
-	//  positions O, D, C, and E are positions where open, deletion, close,
-	//  and extension penalties are computed
-	//         D
-	//			<-gap-->
-	//  XXXXXXXX--------XXXXXXXXX gap sequence
-	//  XXXXXXXXXXXXXXXXXXXXXXXXX loop sequence
-	//          <-loop->
-	//		    O      C
-	//          EEEEEEEE
-
-	SequenceAlignment * parent_alignment;
-	
-	vector<ConserviduePredecessor> predecessors;
-
-	double weighted_sequence_count; // sum over all sequence weights with non-gaps
-	double weighted_internal_gap_count;
-	double weighted_left_end_gap_count;
-	double weighted_right_end_gap_count;
-	
-	// left_end + right_end + internal = weighted_sequence_count
-	double weighted_left_end_sequence_count;  // count of initial residues
-	double weighted_right_end_sequence_count; // count of final residues
-	double weighted_internal_sequence_count; // count of internal residues
-	
-	AlignmentScore gap_opening_penalty; // -log2 probability of loop beginning with this Conservidue
-	AlignmentScore gap_closing_penalty; // -log2 probability of loop before this Conservidue
-	AlignmentScore gap_deletion_penalty; // -log2 probability of gap after this Conservidue
-	ResidueGapParameter p_gap_parameter;
-	
-	// vector<const Residue *> residues; // do we need this, with sequence residues?
-
-	// There is a public accessor for this
-	// array index is sequence number in alignment
-	// array value is residue number in sequence
-	// value -1 means no such sequence in conservidue
-	vector<int> sequence_residues; // ALERT - assumes that each conservidue has at most one residue from each sequence
-	vector<int> sequence_changes; // which sequences change their presence status vs.the previous residue
-	
-	void initialize_members();
-
-public:
-	// Public variables
-	int array_sequence_index; // actual order of Conservidue in parent sequence
-	bool is_initial; // Conservidue has no predecessors, fake Conservidue to indicate start state
-	bool is_final; // Conservidue has no successors, fake Conservidue to indicate stop state
-	map<char, float> residue_counts; // weighted by sequence weights
-
-	// Member functions
-	Conservidue combine_conservidues(const Conservidue & conservidue2) const; // for aligned conservidues
-	// Piecewise linear gap model	
-	AlignmentScore gap_extension_penalty(unsigned int gseg) const;
-	AlignmentScore gap_open_offset(unsigned int gseg) const;
-	AlignmentScore gap_close_offset(unsigned int gseg) const;
-	unsigned int gap_segment_count() const {return p_gap_parameter.segment_count();}
-	ostream & print_debug(ostream & os = cout, unsigned int indent_size = 0) const;
-	// Given a sequence, return the residue that is in this conservidue (for printing)
-	const Residue * sequence_residue(unsigned int sequence_number) const;
-
-	// Constructors
-	Conservidue(const Residue & residue); 
-	Conservidue();
-};
 
 // SequenceAlignment is both the input and output of progressive multiple sequence
 // alignmnent.  It is a directed graph of conservidues.  An individual sequence
@@ -150,6 +114,8 @@ protected:
 public:
 	void add_conservidue(const Conservidue & c, unsigned int sequence_index_offset = 0);
 	void add_sequence(const BioSequence & sequence);
+	SequenceAlignment & initialize_from_pdb_protein(const PDBChain & chain);
+	// void add_pdb_protein(PDBChain chain);
 	void add_sequence_automatic(const BioSequence & sequence);	
 	// Core profile alignment routine
 	// See AlignmentMethod.cpp for implementation
@@ -162,17 +128,23 @@ public:
 		ifstream infile(file_name);
 		if (infile == 0) {
 			cerr << "*** ERROR *** : Unable to open file " << file_name << endl;
-			throw NO_SUCH_FILE_EXCEPTION;
+			throw NO_SUCH_FILE_EXCEPTION();
 		}
 		load_fasta(infile);
 		infile.close();
+	}
+	// istream & SequenceAlignment::load_pdb(istream & is);
+	void load_pdb_file(const char * file_name) {
+		PDBEntry pdb_entry;
+		pdb_entry.load_pdb_file(file_name);
+		initialize_from_pdb_protein(pdb_entry.get_first_chain());
 	}
 	const Conservidue & operator[](int i) const;
 	ostream & print_debug(ostream & os = cout, unsigned int indent_size = 0) const;	
 	ostream & SequenceAlignment::print_pretty(ostream & os = cout) const;
 	float report_accuracy(const SequenceAlignment & true_alignment);
 	vector<BioSequence> & sequence() {return sequences;}
-	AlignmentScore sequence_pair_score(unsigned int seq_index1, unsigned int seq_index2) const; // TODO
+	AlignmentScore sequence_pair_score(unsigned int seq_index1, unsigned int seq_index2, AlignmentGranularity granularity = default_granularity) const; // TODO
 	void set_gap_penalty(double penalty);
 	void set_extension_penalty(const GapModel & gap_model);
 	void set_weight(double w) {
@@ -192,6 +164,8 @@ public:
 			c.weighted_left_end_sequence_count *= factor;  // count of initial residues
 			c.weighted_right_end_sequence_count *= factor; // count of final residues
 			c.weighted_internal_sequence_count *= factor; // count of internal residues			
+			c.gap_open_count *= factor; // count of internal residues			
+			c.gap_close_count *= factor; // count of internal residues			
 			c.gap_opening_penalty *= factor; // -log2 probability of loop beginning with this Conservidue
 			c.gap_closing_penalty *= factor; // -log2 probability of loop before this Conservidue
 			c.gap_deletion_penalty *= factor; // -log2 probability of gap after this Conservidue
@@ -206,7 +180,8 @@ public:
 			}
 		}
 	}
-	AlignmentScore sum_of_pairs_score() const;
+	AlignmentScore sum_of_pairs_score(AlignmentGranularity granularity = default_granularity) const;
+	SequenceAlignment & initialize_from_biosequence(const BioSequence & seq0);
 	
 	// need assignment operator and copy constructor so that conservidue.parent_alignment pointers are properly set
 	SequenceAlignment & operator=(const SequenceAlignment & alignment2);
