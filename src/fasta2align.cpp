@@ -8,37 +8,69 @@ using namespace std;
 
 int main (int argc, char * const argv[]) {
 
+	BioSequence s1 = "AAWWAACCAA";
+	BioSequence s2 = "WWCC";
+	BioSequence s3 = "HHHMITNLERVGHPKERCFTF";
+	SequenceAlignment align1 = s1;	
+	SequenceAlignment align2 = s2;
+	SequenceAlignment align3 = s3;
+	align1.set_weight(0.20);
+	align2.set_weight(1.65);
+	align3.set_weight(0.96);
+	
 	SequenceAlignment true_alignment;
-	ifstream true_infile("fnr_pdr_true.fasta");
-	true_infile >> true_alignment;
-	true_infile.close();
-	cout << true_alignment << endl;
+	true_alignment.load_fasta_file("fnr_pdr_true.fasta");
+	// cout << true_alignment << endl;
 
 	// Read first sequence file
-	const char * infile1_name = "seq1.fasta";
-	ifstream infile1(infile1_name);
-	if (infile1 == 0) {
-		cerr << "*** ERROR *** : Unable to open file " << infile1_name << endl;
-		return NO_SUCH_FILE_EXCEPTION;
-	}
 	SequenceAlignment a1;
-	infile1 >> a1;
+	a1.load_fasta_file("fnr.fasta");
+	a1.set_weight(1.0);
 
 	// Read second sequence file
-	const char * infile2_name = "seq2.fasta";
-	ifstream infile2(infile2_name);
-	if (infile2 == 0) {
-		cerr << "*** ERROR *** : Unable to open file " << infile2_name << endl;
-		return NO_SUCH_FILE_EXCEPTION;
-	}
 	SequenceAlignment a2;
-	infile2 >> a2;
-	infile2.close();
+	a2.load_fasta_file("pdr.fasta");
+	a2.set_weight(1.0);
 	
 	SequenceAlignment a3;
-	a3 = a1.align(a2, ALIGN_LOCAL);
-	cout << a3 << endl;
-	cout << "Sensitivity = " << a3.report_accuracy(true_alignment) << endl;
+	a3.load_fasta_file("b5.fasta");
+	a3.set_weight(1.0);
+	
+	AlignmentScore cumulative_alignment_score;
+	
+	SequenceAlignment alignment;
+	alignment = a1.align(a2);
+	AlignmentScore SOP = alignment.sum_of_pairs_score();
+	// align1.print_debug(cout);
+	// align2.print_debug(cout);
+	// alignment.print_debug(cout);
+
+	cout << alignment << endl;
+	cout << "Sum of pairs score = " << SOP << endl;
+	SOP.print_details(cout);
+	cumulative_alignment_score += alignment.alignment_score();
+	cout << "Cumulative alignment score = " << cumulative_alignment_score << endl;
+	cumulative_alignment_score.print_details(cout);
+	cout << "Discrepancy = " << SOP - cumulative_alignment_score << endl;
+	cout << endl << endl;
+	
+	// alignment.print_debug(cout);
+	// align3.print_debug(cout);
+	alignment = a3.align(alignment); // Add third sequence to alignment
+	SOP = alignment.sum_of_pairs_score();
+	// alignment.print_debug(cout);
+
+	cout << alignment << endl;
+	cout << "Sum of pairs score = " << SOP << endl;
+	SOP.print_details(cout);
+	cumulative_alignment_score += alignment.alignment_score();
+	cout << endl << endl;
+	cout << "Cumulative alignment score = " << cumulative_alignment_score << endl;
+	cout << "Discrepancy = " << SOP - cumulative_alignment_score << endl;
+	cumulative_alignment_score.print_details(cout);
+	cout << endl << endl;
+	
+	// cout << "Sensitivity = " << alignment.report_accuracy(true_alignment) << endl;
 
     return 0;
 }
