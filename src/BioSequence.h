@@ -28,6 +28,12 @@
 // $Header$
 //
 // $Log$
+// Revision 1.4  2004/05/28 19:36:29  cmbruns
+// Match and extension components of sum-of-pairs are correct in profile alignment.
+// Open, close and Delete components are still lower bounds
+// Moved most function bodies to .cpp file
+// Moved end gap parameters from SequenceAlignment, here to BioSequence
+//
 // Revision 1.3  2004/05/23 23:45:11  cmbruns
 // renamed print to print_fasta
 //
@@ -71,10 +77,16 @@
 #ifndef _BIOSEQUENCE_H_
 #define _BIOSEQUENCE_H_
 
-#include "Residue.h"
 #include <string>
 #include <iostream>
 #include <vector>
+#include "Residue.h"
+#include "GapModel.h"
+
+#define DEFAULT_LEFT_GAP_FACTOR 0.5
+#define DEFAULT_RIGHT_GAP_FACTOR 0.5
+#define DEFAULT_LEFT_GAP_EXTENSION_FACTOR 0.1
+#define DEFAULT_RIGHT_GAP_EXTENSION_FACTOR 0.1
 
 class SequenceAlignment;
 
@@ -90,112 +102,52 @@ protected:
   Macromolecule macromolecule; // TODO -- initialize this
   int alignment_sequence_index; // my placement in containing alignment, if any
   SequenceAlignment * parent_alignment;
+  const GapModel * p_gap_model; // gap extension scores
+
+  // Scale scores of end gaps by this amount, but not extensions
+  double left_gap_factor; // coefficient for left end gaps, other than extensions
+  double right_gap_factor; // coefficient for right end gaps, other than extensions
+						   // Additional scale factor applies only to extension portion of gap penalty
+  double left_gap_extension_factor;
+  double right_gap_extension_factor;	
+  
+  float p_weight; // Relative weight in sequence alignment
 
   BioSequence * new_clone() const {
 	  return new BioSequence(*this);
   }
 public:
-
-	// default constructor
-	BioSequence() : 
-		private_id("(no ID)"), 
-		private_title("(no description)"), 
-		alignment_sequence_index(-1),
-		parent_alignment(NULL)
-	{}
-  
-  // copy constructor
-  BioSequence(const BioSequence & s2) {
-	  *this = s2;
-  }
-  
-  // simple constructor
-  BioSequence(const char * seq_string)  : 
-		private_id("(no ID)"), 
-		private_title("(no description)"), 
-		alignment_sequence_index(-1),
-		parent_alignment(NULL)
-	{
-
-	  const char * pos = seq_string;
-	  int residue_number = 0;
-	  while (*pos != NULL) {
-
-		  char one_letter_code = *pos;
-		  Residue * residue_pointer = new_protein_residue(one_letter_code);
-		  add_residue(*residue_pointer);
-		  delete residue_pointer;
-		  
-		  pos ++;
-		  residue_number ++;
-	  }
-  }
-  
-  // destructor
-  ~BioSequence() {
-	  clear();
-  }
-  
+  void add_residue(const Residue & r);
+  void clear();
   const string & get_id() const;
-  const string & get_title() const;
-  const Residue & operator[](unsigned int i) const {return *private_sequence[i];}
-  const string get_sequence() const {return this->get_string();}
-  void set_id(const string & s);
-  void set_title(const string & s);
-  // void set_sequence(const string & s);
-
-  ostream & print_debug(ostream & os, unsigned int indent_size = 0) const;
-  ostream & print_fasta(ostream & os) const;
-
-  // Assignment operator required (just like copy constructor) since 
-	// New pointers must be generated for new residues
-	BioSequence & operator= (const BioSequence & s2) {
-		if (this == &s2) return *this;   // Gracefully handle self assignment
-		
-		clear(); // delete previous content
-		for (unsigned int i = 0; i < s2.length(); ++i) {
-			add_residue(s2[i]);
-		}
-		
-		private_id = s2.private_id;
-		private_title = s2.private_title;
-		macromolecule = s2.macromolecule;
-		
-		return *this;
-	} 
-
+  const string get_sequence() const;
   const string get_string() const;
-  // void add_residue(Residue * r) {private_sequence.push_back(r.new_clone());}
-  // void add_residue(const char & c) {
-  //   private_sequence.push_back(new FastaResidue(c.new_clone()));
-  // }
-  void add_residue(const Residue & r) { // residue allocated with new
-	  private_sequence.push_back(r.new_clone());
-	  Residue & residue = *private_sequence.back();
-	  residue.set_sequence_pointer(this);
-	  residue.sequence_residue_index = private_sequence.size() - 1;
-  }
-  unsigned int length() const {return private_sequence.size();}
-  const Residue & operator[](int index) const {return *(private_sequence[index]);}
-  void clear() {
-    vector<Residue *>::iterator i;
-    for (i = private_sequence.begin(); i != private_sequence.end(); ++i) {
-      delete *i;
-    }
-    private_sequence.clear();
-  }
-
+  const string & get_title() const;
+  float get_weight() const {return p_weight;}
+  bool is_empty() const;
+  bool is_erroneous_subsequence_of(const BioSequence &seq2, int max_errors) const;
   bool is_identical_to(const BioSequence &seq2) const;
   bool is_substring_of(const BioSequence &seq2) const;
   bool is_subsequence_of(const BioSequence &seq2) const;
-  bool is_erroneous_subsequence_of(const BioSequence &seq2, int max_errors) const;
+  unsigned int length() const;
+  const Residue & operator[](unsigned int i) const;
+  ostream & print_debug(ostream & os, unsigned int indent_size = 0) const;
+  ostream & print_fasta(ostream & os) const;
+  istream & read_fasta(istream & is);
+  void set_id(const string & s);
+  void set_title(const string & s);
+  void set_weight(float w) {p_weight = w;}
+  // float & weight() {return p_weight;}
 
-  bool empty() const;
-
+  BioSequence & operator= (const BioSequence & s2);
+  BioSequence();
+  BioSequence(const BioSequence & s2);
+  BioSequence(const char * seq_string);
+  ~BioSequence();
 };
 
 ostream & operator<<(ostream & os, const BioSequence & s);
-istream & operator>> (istream & is, BioSequence & s);
+istream & operator>>(istream & is, BioSequence & s);
 
 #endif
 
