@@ -3,6 +3,11 @@
 
 #include <string>
 #include <iostream>
+#include "Score.h"
+
+#define DEFAULT_GAP_OPENING_PENALTY -0.34
+#define DEFAULT_GAP_CLOSING_PENALTY -0.35
+#define DEFAULT_GAP_DELETION_PENALTY -0.36
 
 using namespace std;
 
@@ -21,18 +26,21 @@ class BioSequence;
 
 ///////// Base class ////////////
 class Residue {
+	friend class SequenceAlignment;
+	friend class Conservidue;
 protected:
 	int p_residue_number;  // Only one true instance variable (non static)
 	const static char p_one_letter_code = '?'; // should not be accessed, every subclass should override this...
 	Macromolecule p_macromolecule;
 	const BioSequence * p_sequence_pointer;
+	
+	// Alignment specific parameters
+	AlignmentScore p_gap_deletion_penalty; // -log2 probability of gap after this Conservidue
+	AlignmentScore p_gap_closing_penalty; // -log2 probability of loop before this Conservidue
+	AlignmentScore p_gap_opening_penalty; // -log2 probability of loop beginning with this Conservidue
 public:
 	unsigned int sequence_residue_index; // Actual index in parent sequence
 
-	Residue() {
-		p_sequence_pointer = NULL;
-		sequence_residue_index = 0;
-	}
 	// Need accessor functions for variables so "virtual" functionality will work
     virtual const char & one_letter_code() const {return p_one_letter_code;}
 
@@ -55,6 +63,16 @@ public:
 			
 		return os;
 	}
+
+	Residue() 
+		: 
+		p_residue_number(-1),
+		p_sequence_pointer(NULL), 
+		p_gap_deletion_penalty(DELETION_SCORE, DEFAULT_GAP_DELETION_PENALTY),
+		p_gap_closing_penalty(CLOSING_SCORE, DEFAULT_GAP_CLOSING_PENALTY),
+		p_gap_opening_penalty(OPENING_SCORE, DEFAULT_GAP_OPENING_PENALTY),
+		sequence_residue_index(0)		
+	{}
 };
 
 ////////// Gap instance class //////////////
@@ -63,19 +81,18 @@ protected:
 	static string p_three_letter_code;	
 	const static char p_one_letter_code = '-';
 public:
-		GapResidue() {
-			p_three_letter_code = "---";
-		}
-		// Need accessor functions for variables so "virtual" functionality will work
-		const char & one_letter_code() const {return p_one_letter_code;}
-		const string & three_letter_code() const {return p_three_letter_code;}
+	GapResidue() {
+		p_three_letter_code = "---";
+	}
+	// Need accessor functions for variables so "virtual" functionality will work
+	const char & one_letter_code() const {return p_one_letter_code;}
+	const string & three_letter_code() const {return p_three_letter_code;}
 	
-		GapResidue * new_clone() const {return new GapResidue(*this);}
-		bool is_gap() const {return true;} // override default 'false' value
+	GapResidue * new_clone() const {return new GapResidue(*this);}
+	bool is_gap() const {return true;} // override default 'false' value
 };
 
 ////////// Intermediate classes for protein and nucleotides //////////
-// Should this base class be used for "unknown amino acid"?
 class Nucleotide : public Residue {	
 protected:
 	const static char p_one_letter_code = 'N'; // default to ambiguity character
@@ -90,6 +107,7 @@ public:
 	bool is_gap() const {return false;}
 };
 
+// Use this class for "unknown amino acid"
 class AminoAcid : public Residue {	
 protected:
 	static string p_three_letter_code;	
@@ -113,31 +131,35 @@ Residue * new_protein_residue(const char one_letter_code);
 // string members must be defined in .cpp file //
 
 class Adenylate : public Nucleotide {	
+protected:
+	const static char p_one_letter_code = 'A'; // default to ambiguity character
 public:
 	Adenylate * new_clone() const {return new Adenylate(*this);}
 	const static string name;
-	const static char one_letter_code = 'A';
 };
 
 class Cytidylate : public Nucleotide {	
+protected:
+	const static char p_one_letter_code = 'C'; // default to ambiguity character
 public:
 	Cytidylate * new_clone() const {return new Cytidylate(*this);}
 	const static string name;
-	const static char one_letter_code = 'C';
 };
 
 class Guanylate : public Nucleotide {	
+protected:
+	const static char p_one_letter_code = 'G'; // default to ambiguity character
 public:
 	Guanylate * new_clone() const {return new Guanylate(*this);}
 	const static string name;
-	const static char one_letter_code = 'G';
 };
 
 class Thymidylate : public Nucleotide {	
+protected:
+	const static char p_one_letter_code = 'T'; // default to ambiguity character
 public:
 	Thymidylate * new_clone() const {return new Thymidylate(*this);}
 	const static string name;
-	const static char one_letter_code = 'T';
 };
 
 //////////// Instance classes for protein /////////////////////////
@@ -172,8 +194,8 @@ protected:
 	static string p_three_letter_code;	
 	const static char p_one_letter_code = 'C'; // default to ambiguity character
 public:
-		// Need accessor functions for variables so "virtual" functionality will work
-		const char & one_letter_code() const {return p_one_letter_code;}
+	// Need accessor functions for variables so "virtual" functionality will work
+	const char & one_letter_code() const {return p_one_letter_code;}
 	const string & three_letter_code() const {return p_three_letter_code;}
 	Cysteine * new_clone() const {return new Cysteine(*this);}
 	const static string name;
@@ -184,8 +206,8 @@ protected:
 	static string p_three_letter_code;	
 	const static char p_one_letter_code = 'D'; // default to ambiguity character
 public:
-		// Need accessor functions for variables so "virtual" functionality will work
-		const char & one_letter_code() const {return p_one_letter_code;}
+	// Need accessor functions for variables so "virtual" functionality will work
+	const char & one_letter_code() const {return p_one_letter_code;}
 	const string & three_letter_code() const {return p_three_letter_code;}
 	Aspartate * new_clone() const {return new Aspartate(*this);}
 	const static string name;
@@ -196,8 +218,8 @@ protected:
 	static string p_three_letter_code;	
 	const static char p_one_letter_code = 'E'; // default to ambiguity character
 public:
-		// Need accessor functions for variables so "virtual" functionality will work
-		const char & one_letter_code() const {return p_one_letter_code;}
+	// Need accessor functions for variables so "virtual" functionality will work
+	const char & one_letter_code() const {return p_one_letter_code;}
 	const string & three_letter_code() const {return p_three_letter_code;}
 	Glutamate * new_clone() const {return new Glutamate(*this);}
 	const static string name;
@@ -208,8 +230,8 @@ protected:
 	static string p_three_letter_code;	
 	const static char p_one_letter_code = 'F'; // default to ambiguity character
 public:
-		// Need accessor functions for variables so "virtual" functionality will work
-		const char & one_letter_code() const {return p_one_letter_code;}
+	// Need accessor functions for variables so "virtual" functionality will work
+	const char & one_letter_code() const {return p_one_letter_code;}
 	const string & three_letter_code() const {return p_three_letter_code;}
 	Phenylalanine * new_clone() const {return new Phenylalanine(*this);}
 	const static string name;
@@ -220,8 +242,8 @@ protected:
 	static string p_three_letter_code;	
 	const static char p_one_letter_code = 'G'; // default to ambiguity character
 public:
-		// Need accessor functions for variables so "virtual" functionality will work
-		const char & one_letter_code() const {return p_one_letter_code;}
+	// Need accessor functions for variables so "virtual" functionality will work
+	const char & one_letter_code() const {return p_one_letter_code;}
 	const string & three_letter_code() const {return p_three_letter_code;}
 	Glycine * new_clone() const {return new Glycine(*this);}
 	const static string name;
@@ -232,8 +254,8 @@ protected:
 	static string p_three_letter_code;	
 	const static char p_one_letter_code = 'H'; // default to ambiguity character
 public:
-		// Need accessor functions for variables so "virtual" functionality will work
-		const char & one_letter_code() const {return p_one_letter_code;}
+	// Need accessor functions for variables so "virtual" functionality will work
+	const char & one_letter_code() const {return p_one_letter_code;}
 	const string & three_letter_code() const {return p_three_letter_code;}
 	Histidine * new_clone() const {return new Histidine(*this);}
 	const static string name;
@@ -244,8 +266,8 @@ protected:
 	static string p_three_letter_code;	
 	const static char p_one_letter_code = 'I'; // default to ambiguity character
 public:
-		// Need accessor functions for variables so "virtual" functionality will work
-		const char & one_letter_code() const {return p_one_letter_code;}
+	// Need accessor functions for variables so "virtual" functionality will work
+	const char & one_letter_code() const {return p_one_letter_code;}
 	const string & three_letter_code() const {return p_three_letter_code;}
 	Isoleucine * new_clone() const {return new Isoleucine(*this);}
 	const static string name;
@@ -256,8 +278,8 @@ protected:
 	static string p_three_letter_code;	
 	const static char p_one_letter_code = 'K'; // default to ambiguity character
 public:
-		// Need accessor functions for variables so "virtual" functionality will work
-		const char & one_letter_code() const {return p_one_letter_code;}
+	// Need accessor functions for variables so "virtual" functionality will work
+	const char & one_letter_code() const {return p_one_letter_code;}
 	const string & three_letter_code() const {return p_three_letter_code;}
 	Lysine * new_clone() const {return new Lysine(*this);}
 	const static string name;
@@ -268,8 +290,8 @@ protected:
 	static string p_three_letter_code;	
 	const static char p_one_letter_code = 'L'; // default to ambiguity character
 public:
-		// Need accessor functions for variables so "virtual" functionality will work
-		const char & one_letter_code() const {return p_one_letter_code;}
+	// Need accessor functions for variables so "virtual" functionality will work
+	const char & one_letter_code() const {return p_one_letter_code;}
 	const string & three_letter_code() const {return p_three_letter_code;}
 	Leucine * new_clone() const {return new Leucine(*this);}
 	const static string name;
@@ -280,8 +302,8 @@ protected:
 	static string p_three_letter_code;	
 	const static char p_one_letter_code = 'M'; // default to ambiguity character
 public:
-		// Need accessor functions for variables so "virtual" functionality will work
-		const char & one_letter_code() const {return p_one_letter_code;}
+	// Need accessor functions for variables so "virtual" functionality will work
+	const char & one_letter_code() const {return p_one_letter_code;}
 	const string & three_letter_code() const {return p_three_letter_code;}
 	Methionine * new_clone() const {return new Methionine(*this);}
 	const static string name;
@@ -292,8 +314,8 @@ protected:
 	static string p_three_letter_code;	
 	const static char p_one_letter_code = 'N'; // default to ambiguity character
 public:
-		// Need accessor functions for variables so "virtual" functionality will work
-		const char & one_letter_code() const {return p_one_letter_code;}
+	// Need accessor functions for variables so "virtual" functionality will work
+	const char & one_letter_code() const {return p_one_letter_code;}
 	const string & three_letter_code() const {return p_three_letter_code;}
 	
 public:
@@ -306,8 +328,8 @@ protected:
 	static string p_three_letter_code;	
 	const static char p_one_letter_code = 'P'; // default to ambiguity character
 public:
-		// Need accessor functions for variables so "virtual" functionality will work
-		const char & one_letter_code() const {return p_one_letter_code;}
+	// Need accessor functions for variables so "virtual" functionality will work
+	const char & one_letter_code() const {return p_one_letter_code;}
 	const string & three_letter_code() const {return p_three_letter_code;}
 	Proline * new_clone() const {return new Proline(*this);}
 	const static string name;
@@ -318,8 +340,8 @@ protected:
 	static string p_three_letter_code;	
 	const static char p_one_letter_code = 'Q'; // default to ambiguity character
 public:
-		// Need accessor functions for variables so "virtual" functionality will work
-		const char & one_letter_code() const {return p_one_letter_code;}
+	// Need accessor functions for variables so "virtual" functionality will work
+	const char & one_letter_code() const {return p_one_letter_code;}
 	const string & three_letter_code() const {return p_three_letter_code;}
 	Glutamine * new_clone() const {return new Glutamine(*this);}
 	const static string name;
@@ -330,8 +352,8 @@ protected:
 	static string p_three_letter_code;	
 	const static char p_one_letter_code = 'R'; // default to ambiguity character
 public:
-		// Need accessor functions for variables so "virtual" functionality will work
-		const char & one_letter_code() const {return p_one_letter_code;}
+	// Need accessor functions for variables so "virtual" functionality will work
+	const char & one_letter_code() const {return p_one_letter_code;}
 	const string & three_letter_code() const {return p_three_letter_code;}
 	Arginine * new_clone() const {return new Arginine(*this);}
 	const static string name;
@@ -342,8 +364,8 @@ protected:
 	static string p_three_letter_code;	
 	const static char p_one_letter_code = 'S'; // default to ambiguity character
 public:
-		// Need accessor functions for variables so "virtual" functionality will work
-		const char & one_letter_code() const {return p_one_letter_code;}
+	// Need accessor functions for variables so "virtual" functionality will work
+	const char & one_letter_code() const {return p_one_letter_code;}
 	const string & three_letter_code() const {return p_three_letter_code;}
 	Serine * new_clone() const {return new Serine(*this);}
 	const static string name;
@@ -354,8 +376,8 @@ protected:
 	static string p_three_letter_code;	
 	const static char p_one_letter_code = 'T'; // default to ambiguity character
 public:
-		// Need accessor functions for variables so "virtual" functionality will work
-		const char & one_letter_code() const {return p_one_letter_code;}
+	// Need accessor functions for variables so "virtual" functionality will work
+	const char & one_letter_code() const {return p_one_letter_code;}
 	const string & three_letter_code() const {return p_three_letter_code;}
 	Threonine * new_clone() const {return new Threonine(*this);}
 	const static string name;
@@ -366,8 +388,8 @@ protected:
 	static string p_three_letter_code;	
 	const static char p_one_letter_code = 'U'; // default to ambiguity character
 public:
-		// Need accessor functions for variables so "virtual" functionality will work
-		const char & one_letter_code() const {return p_one_letter_code;}
+	// Need accessor functions for variables so "virtual" functionality will work
+	const char & one_letter_code() const {return p_one_letter_code;}
 	const string & three_letter_code() const {return p_three_letter_code;}
 	Selenocysteine * new_clone() const {return new Selenocysteine(*this);}
 	const static string name;
@@ -390,8 +412,8 @@ protected:
 	static string p_three_letter_code;	
 	const static char p_one_letter_code = 'W'; // default to ambiguity character
 public:
-		// Need accessor functions for variables so "virtual" functionality will work
-		const char & one_letter_code() const {return p_one_letter_code;}
+	// Need accessor functions for variables so "virtual" functionality will work
+	const char & one_letter_code() const {return p_one_letter_code;}
 	const string & three_letter_code() const {return p_three_letter_code;}
 	Tryptophan * new_clone() const {return new Tryptophan(*this);}
 	const static string name;
@@ -402,8 +424,8 @@ protected:
 	static string p_three_letter_code;	
 	const static char p_one_letter_code = 'Y'; // default to ambiguity character
 public:
-		// Need accessor functions for variables so "virtual" functionality will work
-		const char & one_letter_code() const {return p_one_letter_code;}
+	// Need accessor functions for variables so "virtual" functionality will work
+	const char & one_letter_code() const {return p_one_letter_code;}
 	const string & three_letter_code() const {return p_three_letter_code;}
 	Tyrosine * new_clone() const {return new Tyrosine(*this);}
 	const static string name;
@@ -414,8 +436,8 @@ protected:
 	static string p_three_letter_code;	
 	const static char p_one_letter_code = 'Z'; // default to ambiguity character
 public:
-		// Need accessor functions for variables so "virtual" functionality will work
-		const char & one_letter_code() const {return p_one_letter_code;}
+	// Need accessor functions for variables so "virtual" functionality will work
+	const char & one_letter_code() const {return p_one_letter_code;}
 	const string & three_letter_code() const {return p_three_letter_code;}
 	Glutambiguous * new_clone() const {return new Glutambiguous(*this);}
 	const static string name;
