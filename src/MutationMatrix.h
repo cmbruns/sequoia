@@ -26,8 +26,12 @@
 // $Id$
 // $Header$
 // $Log$
-// Revision 1.1  2004/05/11 20:26:12  cmbruns
-// Initial revision
+// Revision 1.2  2004/05/19 00:58:31  cmbruns
+// Add scale_factor argument to constructor
+// add prototype for scale routine
+//
+// Revision 1.1.1.1  2004/05/11 20:26:12  cmbruns
+// Initial Max repository for latest sequoia
 //
 // Revision 1.4  2002/09/13 23:28:08  bruns
 // Added license header to all header files
@@ -59,12 +63,13 @@ private:
   map<string, double> private_scores;
 public:
   MutationMatrix() {}
-  MutationMatrix(const char * table);
+  MutationMatrix(const char * table, float scale_factor = 1.0);
   void clear();
 
   double get_score(const char r1, const char r2) const;
   double & set_score(const char r1, const char r2);
   double & set_score(const char r1, const char r2, double value);
+  void scale_score(float scale_factor);
 
   const vector<char> & get_row_order() const {return private_row_order;}
   const vector<char> & get_col_order() const {return private_col_order;}
