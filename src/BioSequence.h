@@ -28,8 +28,21 @@
 // $Header$
 //
 // $Log$
-// Revision 1.1  2004/05/11 20:26:12  cmbruns
-// Initial revision
+// Revision 1.2  2004/05/19 00:55:02  cmbruns
+// Closer integration of alignment, sequence, conservidue and residue:
+//   added friend classes to BioSequence
+//   added parent_alignment pointer
+//   added alignment_sequence_index
+// moved macromolecule to protected from public
+// added initialization block to constructors
+// enhanced add_residue subroutine
+// used add_residue for all residue creation
+// fixed memory leak in residue allocation (delete)
+// add operator[]
+// add print_debug function
+//
+// Revision 1.1.1.1  2004/05/11 20:26:12  cmbruns
+// Initial Max repository for latest sequoia
 //
 // Revision 1.8  2002/09/13 23:28:08  bruns
 // Added license header to all header files
@@ -65,17 +78,28 @@ class SequenceAlignment;
 using namespace std;
 
 class BioSequence {
+	friend class SequenceAlignment;
+	friend class Conservidue;
 protected:
-  vector<Residue *> private_sequence;
+  vector<Residue *> private_sequence; // These are pointers, but we need to delete the sequences
   string private_id;
   string private_title;
+  Macromolecule macromolecule; // TODO -- initialize this
+  int alignment_sequence_index; // my placement in containing alignment, if any
+  SequenceAlignment * parent_alignment;
+
   BioSequence * new_clone() const {
 	  return new BioSequence(*this);
   }
 public:
 
-  // default constructor
-  BioSequence() {}
+	// default constructor
+	BioSequence() : 
+		private_id("(no ID)"), 
+		private_title("(no description)"), 
+		alignment_sequence_index(-1),
+		parent_alignment(NULL)
+	{}
   
   // copy constructor
   BioSequence(const BioSequence & s2) {
@@ -83,7 +107,12 @@ public:
   }
   
   // simple constructor
-  BioSequence(const char * seq_string) {
+  BioSequence(const char * seq_string)  : 
+		private_id("(no ID)"), 
+		private_title("(no description)"), 
+		alignment_sequence_index(-1),
+		parent_alignment(NULL)
+	{
 
 	  const char * pos = seq_string;
 	  int residue_number = 0;
@@ -91,9 +120,8 @@ public:
 
 		  char one_letter_code = *pos;
 		  Residue * residue_pointer = new_protein_residue(one_letter_code);
-		  residue_pointer->residue_number() = residue_number;
-		  residue_pointer->set_sequence_pointer(this);
-		  private_sequence.push_back(residue_pointer);
+		  add_residue(*residue_pointer);
+		  delete residue_pointer;
 		  
 		  pos ++;
 		  residue_number ++;
@@ -101,16 +129,19 @@ public:
   }
   
   // destructor
-  ~BioSequence() {clear();}
+  ~BioSequence() {
+	  clear();
+  }
   
-  Macromolecule macromolecule; // TODO -- initialize this
   const string & get_id() const;
   const string & get_title() const;
+  const Residue & operator[](unsigned int i) const {return *private_sequence[i];}
   const string get_sequence() const {return this->get_string();}
   void set_id(const string & s);
   void set_title(const string & s);
   // void set_sequence(const string & s);
 
+  ostream & print_debug(ostream & os, unsigned int indent_size = 0) const;
   ostream & print(ostream & os) const;
 
   // Assignment operator required (just like copy constructor) since 
@@ -121,10 +152,13 @@ public:
 		clear(); // delete previous content
 		int i;
 		for (i = 0; i < s2.length(); ++i) {
-			Residue * residue_pointer = s2[i].new_clone();
-			residue_pointer->set_sequence_pointer(this);
-			private_sequence.push_back(residue_pointer);
+			add_residue(s2[i]);
 		}
+		
+		private_id = s2.private_id;
+		private_title = s2.private_title;
+		macromolecule = s2.macromolecule;
+		
 		return *this;
 	} 
 
@@ -133,8 +167,11 @@ public:
   // void add_residue(const char & c) {
   //   private_sequence.push_back(new FastaResidue(c.new_clone()));
   // }
-  void add_residue(const Residue & r) {
-    private_sequence.push_back(r.new_clone());
+  void add_residue(const Residue & r) { // residue allocated with new
+	  private_sequence.push_back(r.new_clone());
+	  Residue & residue = *private_sequence.back();
+	  residue.set_sequence_pointer(this);
+	  residue.sequence_residue_index = private_sequence.size() - 1;
   }
   int length() const {return private_sequence.size();}
   const Residue & operator[](int index) const {return *(private_sequence[index]);}
@@ -157,7 +194,6 @@ public:
 
 ostream & operator<<(ostream & os, const BioSequence & s);
 istream & operator>> (istream & is, BioSequence & s);
-// ostream & operator<< (ostream & os, const BioSequence & s);
 
 #endif
 
