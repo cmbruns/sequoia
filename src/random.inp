@@ -1,0 +1,5 @@
+read struct1 fnr946.pdb
+read struct2 x35f.pdb
+align
+random 10
+

@@ -1,0 +1,898 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">
+
+<!-- $Id: sequoia.htm,v 1.2 2001/11/29 00:04:43 bruns Exp $ -->
+<!-- $Header: /usr/data/cvs/sequoia1/sequoia.htm,v 1.2 2001/11/29 00:04:43 bruns Exp $ -->
+<!-- $Log: sequoia.htm,v $
+<!-- Revision 1.2  2001/11/29 00:04:43  bruns
+<!-- Removed ^M characters
+<!-- Added cvs tags
+<!-- -->
+
+<HTML>
+
+<HEAD>
+<TITLE> SEQUOIA 0.9.6 User's Guide </TITLE>
+</HEAD>
+
+<BODY BGCOLOR="white">
+
+<H1> SEQUOIA User's Guide </H1>
+version 0.9.6 May 2000
+Copyright &#169; 1995-2000 Christopher M. Bruns Ph.D., All rights reserved
+
+<P>
+The latest version of this document is available at 
+<A HREF="http://www.scripps.edu/~bruns/sequoia.html">
+http://www.scripps.edu/~bruns/sequoia.html</A>
+
+<HR>
+
+<H2><A NAME= "contents">Contents</A></H2>
+
+<UL>
+
+<LI><A HREF="#introduction">Introduction</A>
+<LI><A HREF="#tutorial">Tutorial</A>
+<LI><A HREF="#command_reference">Command Reference</A>
+<LI><A HREF="#variable_reference">Variable Reference</A>
+<LI><A HREF="#theory">Theory</A>
+<LI><A HREF="#file_formats">File Formats</A>
+<LI><A HREF="#references">References</A>
+<LI><A HREF="#download">Get the program</A>
+
+</UL>
+
+<HR>
+
+<H2><A NAME= "introduction">Introduction</A></H2>
+
+SEQUOIA is a computer program for
+the alignment of homologous protein sequences, and for the superpostion 
+of homologous protein atomic coordinates.  To get started aligning
+sequences, follow the examples in the 
+<A HREF="#tutorial">tutorial</A>
+section of this document.
+
+<H3> Philosophy </H3>
+
+<P>This program is intended to assist in the alignment of
+homologous protein sequences.  It uses a conventional dynamic
+programming algorithm after the work of Needleman and Wunsch to find
+the globally optimal alignment given a particular residue comparison
+matrix and gapping model.
+  I created this after being frustrated that I was unable to find a
+program which would align together two files of sequences, each of
+which contains pre-aligned sequences.  Often in protein
+crystallography, we have structural information about how to align two
+protein sequences, which we wish to keep intact.  Many of the available
+multiple alignment programs require a series of individual sequence
+files as input, and return a multiple sequence alignment as output,
+with very little opportunity for manual intervention along the way.
+In my experience, the results of these programs are almost always at
+odds with the structural alignments (i.e. wrong).  I wrote this in an
+attempt to provide an alignment tool which the thoughtful modern
+protein biochemist might be able to use in conjunction with a variety
+of ancillary information.  The sequence and matrix
+<A HREF="#file_formats">files</A> 
+can be modified easily with your favorite text editor.
+
+<P>Accolades, kudos, and other diplomatically worded bug reports should
+be sent to <A HREF="mailto:bruns@scripps.edu">bruns@scripps.edu</A>.
+
+<H3> Registers </H3>
+
+<P>Understanding the organization of sequence information is crucial
+to the effective use of SEQUOIA.  Most of the operations in this
+program involve aligning two collections of things together.  The
+&quot;things&quot; in this context may be sequences, groups of aligned
+sequences, or three-dimensional protein structures.  There are a total
+of six registers, or containers, for these items.  The two primary
+ones, SEQ1 and SEQ2, contain
+sequences or alignments.  A third register, 
+ALIGN, usually contains the combined result of
+aligning SEQ1 with SEQ2.
+The remaining three, STRUCT1, STRUCT2, and OVERLAY, are analogous to
+the first three, except that they contain tertiary structures rather
+than simple sequences.  To summarize:
+
+<DL>
+
+<P><DT> <A NAME= "seq1">SEQ1</A>
+<DD> The principal storage bin for sequences or alignments.  This
+register can be filled by READing sequences from a file, or SETing
+them from another register.  READing a structure into STRUCT1 also
+overwrites the SEQ1 register.  The contents of SEQ1 can be output in
+<A HREF="#file_formats">sequence file format</A>
+by WRITEing to a file or to the screen.  The
+contents can be output in a more attractive presentation format with
+the PRINT command.
+
+<P><DT> <A NAME= "seq2">SEQ2</A>
+<DD> The other principal storage bin for sequences or alignments.
+READing a structure into STRUCT2 also 
+overwrites the SEQ2 register.  READ, SET, WRITE, and PRINT commands have
+the same uses with SEQ2 as they do with SEQ1.
+
+<P><DT> <A NAME= "align_reg">ALIGN</A>
+<DD> This bin is used to store newly aligned sequences.  Be aware that
+ALIGN is both a register <STRONG>and</STRONG> a 
+<A HREF="#align_com">command</A>.  This register is overwritten during the
+execution of ALIGN, SALIGN, and OVERLAY commands.  Its capitalization
+pattern is modified by the EQUIVALENCE command.  READ, SET, WRITE, and
+PRINT commands can be used with ALIGN, just as with SEQ1 and SEQ2.
+
+<P><DT> <A NAME= "struct1">STRUCT1</A>
+<DD> The principal storage bin for protein tertiary structures.  Can
+be filled with the READ and SET commands.  READing a file into
+STRUCT1 also overwrites SEQ1 with the sequence.  WRITE and PRINT
+commands are synonymous, generating a 
+<A HREF="http://www.rcsb.org/pdb/">PDB format</A> 
+atomic coordinate
+output.
+
+<P><DT> <A NAME= "struct2">STRUCT2</A>
+<DD> Like STRUCT1, the other principal storage bin for protein
+tertiary structures.  READing a file into STRUCT2 also overwrites SEQ2
+with the sequence.  READ, SET, WRITE, and PRINT commands can be used
+the same way as for STRUCT1.
+
+<P><DT> <A NAME= "overlay_reg">OVERLAY</A>
+<DD> The result of superposing STRUCT2 onto STRUCT1.  This register is
+modified by the SUPERPOSE and OVERLAY commands.  READ, SET, WRITE,
+and PRINT commands can be used the same way as for STRUCT1 and
+STRUCT2.
+
+</DL>
+
+<H3> Acknowledgments </H3>
+
+Christopher Putnam of the Scripps Research Institute has devoted some
+of his boundless energy and enthusiasm to improving this program.
+Without his suggestions this work would be far shabbier than it now
+is. John Tainer, Dave Hosfield, Terence Lo, Maria Thayer, and Cliff Mol also provided 
+constructive advice.
+
+<HR>
+
+<H2><A NAME= "tutorial">Tutorial</A></H2>
+
+<P>In the following examples, text following the
+&quot;SEQUOIA&gt;&quot; prompt represent commands typed by the user.
+Other lines represent the output of the program.  Commands may be
+typed in either upper or lower case letters.
+
+<H3> Scenario 1: Aligning three sequences </H3>
+
+In this example, the files test1.seq, test2.seq, and
+test3.seq contain sequence information in the SEQUOIA 
+<A HREF="#file_formats">file format</A>.  A file called test.align is
+created in the same format, and the file test.pretty is created with a
+more aesthetically pleasing representation of the aligned sequences.
+What follows is the output of an actual alignment session.
+
+<PRE>
+SEQUOIA multiple sequence alignment tool
+version 0.9.6
+copyright (c) 1995, 1996, 1997, 1998, 1999, 2000
+by Chris Bruns, Ph.D.
+The Scripps Research Institute, La Jolla, CA
+All rights reserved
+
+SEQUOIA&gt; read <A HREF="#seq1">SEQ1</A> test1.seq
+Opening file ``test1.seq''
+Read in 1 sequence(s)
+
+SEQUOIA&gt; read <A HREF="#seq2">SEQ2</A> test2.seq
+Opening file ``test2.seq''
+Read in 1 sequence(s)
+
+SEQUOIA&gt; align
+Running TABULATE command...
+Mean residue alignment score = 1.82649e-07 with a standard deviation of 2.08357
+Aligning sequences...
+0 gaps added to make alignment
+Alignment score is 44.6169
+
+SEQUOIA&gt; print <A HREF="#align_reg">ALIGN</A>
+  1) (w=1)  test1
+  2) (w=1)  test2
+
+               .         .         .         .         .50
+   1) MQFKHFKLATLAAALAFSANSFADIT-  26
+   2) -MKTSIRYALLAAALTAATPALADITV  26
+              * *****       ****                        
+
+
+SEQUOIA&gt; set <A HREF="#seq1">SEQ1</A> <A HREF="#align_reg">ALIGN</A>
+copied ALIGN to SEQ1
+
+SEQUOIA&gt; read <A HREF="#seq2">SEQ2</A> test3.seq
+Opening file ``test3.seq''
+Read in 1 sequence(s)
+
+SEQUOIA&gt; align
+Running TABULATE command...
+Mean residue alignment score = 9e-07 with a standard deviation of 3.5
+Aligning sequences...
+0 gaps added to make alignment
+Alignment score is 30
+
+SEQUOIA&gt; print <A HREF="#align_reg">ALIGN</A>
+  1) (w=1)  test1
+  2) (w=1)  test2
+  3) (w=1)  test3
+
+               .         .         .         .         .50
+   1) ---MQFKHFKLATLAAALAFSANSFADIT-  26
+   2) ----MKTSIRYALLAAALTAATPALADITV  26
+   3) MKLRISSLGPVALLASSMMLAFGAQAA---  27
+                 * **          *                        
+
+
+SEQUOIA&gt; write <A HREF="#align_reg">ALIGN</A> test.align
+Opening file ``test.align''
+Wrote 3 sequence(s)
+
+SEQUOIA&gt; print <A HREF="#align_reg">ALIGN</A> test.pretty
+Opening file ``test.pretty''
+
+SEQUOIA&gt; print id
+
+Percent sequence identities:
+        1   2   3
+   1) 100  40  16
+   2)  40 100  30
+   3)  16  30 100
+
+SEQUOIA&gt;  quit
+Program terminated by user
+</PRE>
+
+<P>The PRINT ID command displays the level of sequence identity among the
+aligned sequences.  The PRINT commands are not required for the
+alignment process, but they show that nothing ridiculous is going on.
+Only the READ, ALIGN, SET, and WRITE commands in the above example are
+required to generate the alignment.  Additional sequences can be added
+to the alignment by repeatedly SETing the previous 
+<A HREF="#seq1">SEQ1</A> 
+to <A HREF="#align_reg">ALIGNment</A>, 
+READing the new sequence into <A HREF="#seq2">SEQ2</A>, and ALIGNing.  The best strategy
+is to ALIGN the most similar sequences first.  Don't forget to WRITE
+the final alignment when you are done.
+
+<P>The whole process could be done in batch mode by making a script
+file called test.inp, containing the lines:
+
+<PRE>
+read seq1 test1.seq
+read seq2 test2.seq
+align
+set <A HREF="#seq1">SEQ1</A> <A HREF="#align_reg">ALIGN</A>
+read seq2 test3.seq
+align
+write test.align
+quit
+</PRE>
+
+Then you could invoke this file from within SEQUOIA by typing
+<PRE>@test.inp</PRE>
+or, from a shell in UNIX or MSDOS:
+<PRE>sequoia &lt; test.inp</PRE>
+
+<H3> Scenario 2: Aligning two sequences, assessing significance </H3>
+
+<H3> Scenario 3: Overlaying two tertiary structures </H3>
+
+<H4> step 1 - read in two coordinate files </H4>
+
+<PRE>
+SEQUOIA&gt; read <A HREF="#struct1">STRUCT1</A> test1.pdb
+
+SEQUOIA&gt; read <A HREF="#struct2">STRUCT2</A> test2.pdb
+</PRE>
+
+<H4> step 2 - create a preliminary alignment </H4>
+
+<PRE>
+SEQUOIA&gt; align
+</PRE>
+
+<H4> step 3 -  attempt an overlay using default parameters </H4>
+
+<PRE>
+SEQUOIA&gt; overlay
+</PRE>
+
+<H4> step 4 -  THINK - is this working? </H4>
+
+<P>
+  If it is, go on to step 6.  
+The OVERLAY step often fails for difficult problems,
+so this is one point where you may have to experiment to get things
+working.  OVERLAY is a semi-automatic command which uses the
+commands SALIGN, STABULATE, SUPERPOSE, and EQUIVALENCE.
+</P>
+
+<H4> step 5 - Experiment until it starts working. </H4>
+
+<H5> PROBLEM: not enough equivalences (usually falls to zero) </H5>
+<P>
+  Try increasing DCUTOFF to, say, 10.  If this works, try slowly lowering
+DCUTOFF toward a more reasonable value (4.0 is good).
+</P>
+
+<PRE>
+SEQUOIA&gt; align
+SEQUOIA&gt; set dcutoff 10
+SEQUOIA&gt; overlay
+SEQUOIA&gt; set dcutoff 8
+SEQUOIA&gt; overlay
+SEQUOIA&gt; set dcutoff 6
+SEQUOIA&gt; overlay
+SEQUOIA&gt; set dcutoff 4
+SEQUOIA&gt; overlay
+</PRE>
+
+<P>
+  If this sort of thing fails, try using a molecular graphics program
+to place the structures into approximate alignment.  Then try something
+like:
+</P>
+
+<PRE>
+SEQUOIA&gt; read <A HREF="#struct1">STRUCT1</A> test1.pdb
+SEQUOIA&gt; read <A HREF="#struct2">STRUCT2</A> test2.pdb
+SEQUOIA&gt; set dcutoff 10
+SEQUOIA&gt; align
+SEQUOIA&gt; salign
+SEQUOIA&gt; equivalence
+SEQUOIA&gt; overlay
+</PRE>
+etc...
+
+<P>
+  Some parameters you should consider adjusting to change the performance
+of the overlay procedure are
+GPEN, 
+EPEN, 
+USEANGLE, 
+ACUTOFF, 
+DCUTOFF, and
+RUNLENGTH.
+  You may also wish to consider manually using the commands SALIGN,
+STABULATE, SUPERPOSE, and EQUIVALENCE; instead of using the more automatic OVERLAY
+command.
+</P>
+
+<H4> step 6 -  repeat OVERLAY until the process converges. </H4>
+
+<PRE>
+SEQUOIA&gt; overlay
+SEQUOIA&gt; overlay
+SEQUOIA&gt; overlay
+</PRE>
+etc...
+
+<P>
+  Eventually the structure based alignment will probably stabilize.
+The RMS deviations will remain about the same, and the number of
+aligned residues will remain the same.  Examine the alignment to
+ensure that everything is the way you want it.  If things have gone
+well you will have a reasonable least-squares superposition of the
+structures, and you will have a good starting point for a structural
+alignment.
+</P>
+
+<P>
+  DO NOT BLINDLY TRUST THIS ALIGNMENT.  In my experience most features
+will be correct, but it is necessary for an intelligent and knowledgeable
+human to compare the structures and the alignment to make final adjustments.
+</P>
+
+<P>
+  Some parameters you should consider adjusting to change the performance
+of the overlay procedure are
+GPEN, 
+EPEN, 
+USEANGLE, 
+ACUTOFF, 
+DCUTOFF, and
+RUNLENGTH.
+  You may also wish to consider manually using the commands SALIGN,
+STABULATE, SUPERPOSE, and EQUIVALENCE; instead of using the more automatic OVERLAY
+command.
+</P>
+
+<H4> step 7 -  write out the transformed coordinates </H4>
+
+<PRE>
+SEQUOIA&gt; write <A HREF="#overlay_reg">OVERLAY</A> test2rot.pdb
+</PRE>
+
+<H4> step 8 -  write out the structure-based sequence alignment </H4>
+
+<PRE>
+SEQUOIA&gt; write <A HREF="#align_reg">ALIGN</A> test1_2struct.align
+</PRE>
+
+<HR>
+
+<H2><A NAME= "command_reference">Command Reference</A></H2>
+
+<P> Type &quot;HELP&quot; at the SEQUOIA prompt for on-line help </P>
+
+<H3> Commands: </H3>
+
+<!-- begin new command list here -->
+
+<DL>
+
+<P><DT>
+<A NAME="align_com">ALIGN</A>
+<DD>ALIGN aligns the sequences in register <A HREF="#seq1">SEQ1</A> with those in <A HREF="#seq2">SEQ2</A> using the current parameters.  The result ends up in <A HREF="#align_reg">ALIGN</A>.  TABULATE will be automatically
+run, if necessary.
+<DD>Usage: ALIGN
+
+<P><DT>
+  COMMENT
+<DD>A line starting with COMMENT is ignored.
+<DD>SYNONYMS:  COMMENT,  #,  [,  {,  /,  REM
+
+<P><DT>CONSENSUS &lt;sigma&gt;
+<DD>CONSENSUS generates a weighted consensus sequence based on the contents of 
+the <A HREF="#align_reg">ALIGN</A> register,
+and places the result in the <A HREF="#seq2">SEQ2</A> register.  The consensus 
+contains an
+X at positions where the best residue is less than sigma standard deviations
+above the mean for all residue types.
+The resulting consensus may be useful for identifying distant homologs in 
+a BLAST search.
+
+
+<P><DT>
+  EQUIVALENCE
+<DD>Capitalizes those residue codes in the <A HREF="#align_reg">ALIGN</A>
+register whose atomic coordinates are structurally equivalent.
+Others are converted 
+to lower case.  EQUIVALENCE is one step in the OVERLAY process.
+The variables ACUTOFF, DCUTOFF, RUNLENGTH, and USEANGLE affect the behavior
+of this command.
+<DD>Usage: EQUIVALENCE
+
+<P><DT>
+  HELP
+<DD>HELP prints documentation about SEQUOIA commands.
+<DD>Usage: HELP <command>
+<DD>EXAMPLE: HELP ALIGN
+<DD>SYNONYMS:  HELP,  ?,  MAN
+
+<P><DT>
+  OPTIMIZE
+<DD>	Iteratively optimize the current alignment.  One by one, each
+sequence is removed, degapped, and realigned.  Should remove the most
+egregious flaws like &quot;----K---&quot; within a sequence.  
+The sequences are 
+realigned in random order.  Multiple OPTIMIZE commands may be used to further
+improve the alignment.
+Try using
+the SPLIT command manually for more precise realignment.
+
+<P><DT>
+  OVERLAY
+<DD>OVERLAY iteratively superposes and realigns two coordinate files to 
+convergence.  OVERLAY calls the EQUIVALENCE, SUPERPOSE, and SALIGN commands.
+It uses the <A HREF="#align_reg">ALIGN</A> register to SUPERPOSE 
+<A HREF="#struct2">STRUCT2</A> onto <A HREF="#struct1">STRUCT1</A>.  EQUIVALENCE
+residues are reassigned and the process is repeated to convergence.
+Finally, <A HREF="#align_reg">ALIGN</A> is replaced with the new SALIGNment of 
+<A HREF="#struct1">STRUCT1</A> with
+<A HREF="#struct2">STRUCT2</A>.
+
+<P><DT>
+  PRINT
+<DD>PRINT is used to display readable formatted data from SEQUOIA.
+<DD>PRINT &lt;register&gt; displays a formatted verion of a sequence alignment or 
+structure.  The formatted sequence alignment CANNOT be READ into
+SEQUOIA.  Use the WRITE command to make a native sequence file.
+<DD>PRINT MATRIX displays the current comparison matrix
+<DD>PRINT ID &lt;register&gt; displays a table of sequence identities.
+<DD>SUBCOMMANDS: ID, MATRIX
+
+<P><DT>
+  QUIT
+<DD>QUIT causes SEQUOIA to terminate.
+<DD>SYNONYMS:  QUIT,  BYE,  END,  EXIT,  HALT,  KILL,  Q,  STOP
+
+<P><DT>
+  READ
+<DD>READ is used to load data into SEQUOIA from files.
+<DD>READ <register> <filename> loads structure data into a register.
+<DD>READ MATRIX <filename> loads a comparison matrix.  (The
+matrix &quot;BLOSUM62&quot; is automatically loaded by default.)
+
+<P><DT>
+  RANDOM &lt;iterations&gt;
+<DD>Calculates alignment scores with SEQ2 
+randomly shuffled.  This is used to provide one estimate of alignment significance
+Subsequent runs use the same
+randomizations, so that statistics may be accurately compared between
+runs.  [For example, the &quot;delta sigma&quot; score reported can give an
+accurate comparison of the significance of two sequential runs between
+which the gap penalty has been changed.]  The &quot;iterations&quot; argument
+specifies the number of randomizations to perform.  This should
+definitely be run in batch mode for large values.
+The RANDOM_SEED variable can be modified to yield a different set of randomizations.  
+
+<P><DT>
+  RUN
+<DD>RUN &lt;filename&gt; executes SEQUIOA commands contained in a file.
+<DD>SYNONYMS:  RUN,  @
+<DD>This feature can be used recursively.
+
+
+<P><DT>
+  SALIGN
+<DD>SALIGN aligns the sequences in registers SEQ1 with those in SEQ2 based 
+upon the superposed atomic coordinates , and places the result in the 
+<A HREF="#align_reg">ALIGN</A> register.
+<DD>Usage: SALIGN
+
+<P><DT>
+  SET
+<DD>SET <variable> <value> assigns a value to a SEQUOIA variable.
+<DD>EXAMPLE: SET GPEN 5.0
+<DD>SET <register1> <register2> copies the contents of <register1> into <register2>
+(this supersedes the old COPY command)
+<DD>EXAMPLE: SET SEQ1 ALIGN
+<DD>SET with no arguments lists the values of all variables.
+<DD>SYNONYMS:  SET,  LET
+
+<P><DT>SPLIT &lt;integer value&gt;
+<DD> Extracts a single sequence (defaults to 1) from ALIGN, remove gaps,
+and place in SEQ1.  The other sequences in ALIGN are placed in SEQ2.
+This process is used by the OPTIMIZE command.
+<DD>Usage: SPLIT <sequence number>
+
+<P><DT>
+  STABULATE
+<DD>Fills the scoring table with values used for structural overlay
+with the SALIGN command.
+(This is ordinarily done automatically.)
+
+<P><DT>
+  SUPERPOSE
+<DD> Replaces <A HREF="#overlay_reg">OVERLAY</A> with 
+<A HREF="#struct1">STRUCT1</A>, plus 
+<A HREF="#struct2">STRUCT2</A> 
+rotated and translated so as to minimize the
+squared deviation of residues declared equivalent by capitalization in
+the <A HREF="#align_reg">ALIGN</A> register.
+
+<P><DT>
+  SYSTEM
+<DD>SYSTEM &lt;command&gt; executes a command in the local operating system.
+<DD>EXAMPLE: SYSTEM ls *.pdb
+<DD>SYNONYMS:  SYSTEM,  !
+
+<P><DT>
+  TABULATE
+<DD> Creates the scoring matrix using <A HREF="#seq1">SEQ1</A>, 
+<A HREF="#seq2">SEQ2</A>, and the comparison matrix for subsequent use 
+by the ALIGN command.
+(This is ordinarily done automatically.)
+
+<P><DT>
+  WEIGHT
+Applies a weighting scheme to all of the sequence registers
+to emphasize the more
+diverse sequences.
+Within each alignment, each sequence is
+weighted as follows:
+<BLOCKQUOTE>
+		weight(i) = 1 / (SUM(over j) Proximity(i,j))
+</BLOCKQUOTE>
+	For now the Proximity between sequences i and j is defined as
+the sequence identity.  The weights are then normalized so that
+the smallest weight in each sequence is unity.  This weighting will
+ordinarily improve the significance of alignments between large groups
+of distantly related sequences.  If you ever find a case where it
+hurts, please let me know.
+
+<P><DT>
+  WRITE &lt;register&gt; [&lt;filename&gt;]
+<DD>Creates sequence or coordinate files from SEQUOIA.
+
+<!-- end new command list here -->
+
+</DL>
+
+<HR>
+
+<H2><A NAME= "variable_reference">Variable Reference</A></H2>
+
+Variables used in the current version of SEQUOIA are shown below.
+SEQUOIA variables are NOT case sensitive.
+Most changes to variables can be done with the SET command.
+
+<H3> Variables: </H3>
+
+<DL>
+
+<P><DT>ACUTOFF
+<DD>In order to be considered structurally equivalent, the orientations
+of two overlaid residues must differ by less than this value.
+<DD> See also: ACUTOFF, DCUTOFF, RUNLENGTH
+<DD>Units: degrees
+<DD>Default value = 45
+
+<P><DT>DCUTOFF
+<DD>In order to be considered structurally equivalent, the distance between 
+of two overlaid residues must be less than this value.
+<DD> See also: ACUTOFF, DCUTOFF, RUNLENGTH
+<DD>Units: Angstroms
+<DD>Default value = 4.5
+
+<P><DT>ECHO
+<DD>When set, user commands are echoed to the screen.  This is useful
+when running scripts, if your commands do not appear in the log file.
+<DD>Units: boolean (0 or 1)
+<DD>Default value = 0
+
+<P><DT>EPEN
+<DD>Gap extension penalty.  In order to reduce spurious placement of large 
+gaps during alignment, this value is subtracted from the alignment score for
+each gap character that is inserted during alignment.
+Thus longer gaps incur higher penalties, unlike the
+case with GPEN.  Higher values result in smaller and fewer gaps.
+A larger value may work in
+conjunction with a smaller value of GPEN.
+<DD>Units: standard deviations of residue scores
+<DD>Default value = 0.01
+
+<P><DT>GPEN
+<DD>Gap penalty.  In order to reduce spurious placement of 
+gaps during alignment, this value is subtracted from the alignment score for
+each gap (of any size) that is inserted during alignment.
+Higher
+values result in fewer gaps.
+<DD>Units: standard deviations of residue scores
+<DD>Default value = 10
+
+<P><DT>PRETTY_LENGTH
+<DD>Controls the width of the output for the PRINT &lt;register&gt; command to 
+display formatted sequence alignments.
+<DD>Units: characters
+<DD>Default value = 50
+
+<P><DT>RANDOM_SEED
+<DD>Changes the randomization seed for the RANDOM command.
+The value of RANDOM_SEED determines the sequence of random 
+numbers used in the RANDOM and OPTIMIZE 
+commands.  Leave this the same value in order to compare identical randomizations
+with different gpen values in RANDOM, for example,
+so that the same set of shufflings will be performed every time.
+If you change the seed between randomization runs, the &quot;delta sigma&quot;
+statistic will be much less meaningful.
+<DD>Units: positive integer
+<DD>Default value = 1
+
+<P><DT>RUNLENGTH
+<DD>RUNLENGTH or more equivalent residues must occur in a row, in order to be considered 
+structurally equivalent.  
+<DD> See also: ACUTOFF, DCUTOFF, RUNLENGTH
+<DD>Units: residues
+<DD>Default value = 4
+
+<P><DT>SUBOPTIMAL
+<DD>During alignment, SEQUOIA will randomly choose among alignment paths differing
+by less than this value.  A simulated annealing strategy for alignment optimization 
+can be performed by gradually decreasing the value of this parameter.
+<DD>Units: standard deviations of residue scores
+<DD>Default value = 0.1
+
+<P><DT>USEANGLE
+<DD>When set, residue orientations are used to determine structural equivalences.  
+This should be set to true, once an initial overlay has been generated.
+<DD>Units: boolean (0 or 1)
+<DD>Default value = 0
+
+</DL>
+
+<HR>
+
+<H2><A NAME= "theory">Theory</A></H2>
+
+<H3>Global sequence alignment</H3>
+
+ <P>Most modern computational sequence alignment methods can be placed
+into one of two categories: <EM>local</EM> and <EM>global</EM>
+alignment methods.  SEQUOIA uses a <EM>global</EM> alignment algorithm.
+
+ <P>Both classes of techniques use some sort of comparison matrix to
+determine which amino acid residues are &quot;similar&quot;.  <EM>Local</EM>
+methods find continuous segments of similar residues between two
+protein sequences.  The equivalent segments will pair up residues that
+have high comparison scores, so that the each segment has a high total
+sum.
+
+ <P><EM>Global</EM> alignment methods align two entire sequences together
+so as to maximize the total sum of the comparison scores of all
+aligned residues, not just those in the most similar continuous
+segments.  To accomplish this, <EM>gaps</EM> are ordinarily inserted
+into the sequences to 
+account for insertions and deletions in the sequences during the
+course of evolution.  
+
+<H4>Computational complexity</H4>
+
+ <P>How do you calculate which is the very highest scoring sequence
+alignment between two sequences?  One possibility would be to
+explicitly generate every possible alignment, calculate each score, and
+save the highest scoring one.  Unfortunately, the total number of
+alignments is quite large.  If <VAR>n</VAR> is the number of residues
+in the sequences, the total number of alignments is proportional to 2
+raised to the <VAR>n</VAR> power, or <VAR>n</VAR> factorial, or
+something like that.  Whichever it is, it turns out to be greater than
+the number of particles in the universe for reasonable sized cases.  I
+don't care how fast your computer is, it cannot do this.
+
+ <P>Fortunately the global alignment problem can be broken down into a
+series of subproblems, so that the algorithmic technique of
+<EM>dynamic programming</EM> can be used.  This means that in this
+case the optimal solution can be found in time proportional to <VAR>n</VAR>
+squared, which is accessible even on modest computers (Perhaps
+<VAR>n</VAR> cubed for more complicated gapping schemes -- more
+complicated than anything currently in SEQUOIA).  It is important to
+realize that both memory and time requirements are proportional to the
+<EM>square</EM> of the sequence length.  That is, if you change to
+sequences that are a bit more than three times as long, the time and
+memory requirements will increase by a factor of <EM>ten</EM>.  But it
+is still far superior to that &quot;number of particles in the universe&quot;
+monkey business.
+
+<H4>Gapping and gap penalties</H4>
+
+ <P> Proteins tend to accumulate insertions and deletions
+of stretches of amino acids during the course of evolution.  This
+means that two homologous proteins which have diverged significantly
+will have regions of insertion and deletion relative to one another.
+This means that the &quot;true&quot; alignment between the two protein sequences
+will have to account for these insertion and deletion events.  
+Each such event is usually represented by a <EM>gap</EM> in one of the
+aligned sequences.
+
+ <P> 
+
+<HR>
+
+<H2><A NAME= "file_formats">File Formats</A></H2>
+
+<H3>Sequence file format</H3>
+
+<P>I have attempted to keep the file format simple.  What follows
+is a canonical sequence file in a format readable by SEQUOIA.
+
+<PRE>
+&gt; A glycine rich sequence
+GGDFHINMVGRGEGLPWGTGQASGDGPF
+RGHTGLPGDV*
+</PRE>
+
+The title of the sequence goes on its own line with a &quot;&gt;&quot; character in
+the first position.  The sequence information then follows on
+subsequent lines in free format until the &quot;*&quot; character, or the next
+&quot;&gt;&quot; character, indicating a new sequence.  In the output files, the
+entire actual sequence is shoved onto one line, for ease of editing
+the alignment.  If the first character of the sequence is a '#', then
+it should be followed by digits, to indicate the number of the first
+residue.  Thus a sequence which begins with residue number 17 would
+look like:
+
+<PRE>
+&gt; partial sequence
+#17gvcsnflqwertyiop
+</PRE>
+
+<H3>Comparison matrix file format</H3>
+
+
+<HR>
+
+<H2><A NAME= "references">References</A></H2>
+
+<OL>
+
+<LI>Dayhoff, M. O. (1978) Atlas of protein sequence and structure.
+(Natl. Biomed. Res. Found. Washington), Vol. 5, Suppl. 3.
+
+<LI>Henikoff, S. and Henikoff, J. G. (1992) Amino acid substitution
+matrices from protein blocks.  Proc. Natl. Acad. Sci. USA 89:
+10915-10919
+
+<LI>Needleman, S. B. and Wunsch, C. D. (1970) A general method
+applicable to the search for similarities in the amino acid sequence
+of two proteins.  J. Mol. Biol. 48: 443-453
+
+</OL>
+
+<HR>
+
+<H2><A NAME= "download">Executable files</A></H2>
+
+Preliminary test versions of SEQUOIA are available for the following platforms:
+
+<P>
+version 0.9.3b.  New features include command line history and editing, 
+plus a bug fix for cases where a D- amino acid could cause structural alignment
+to fail ungracefully.
+
+<P> version 0.9.4 December 1999 - updated expiration date.  Partially implemeted equivalence command is broken.
+
+<P> version 0.9.5 May 04, 2000 - restored EQUIVALENCE command to former functionality.  SUN version works again.
+
+<P> version 0.9.6 - removed output buffering. gpen is updated before every alignment 
+
+<UL>
+
+<LI>PC Linux ELF 2.2 <A HREF="http://www.scripps.edu/~bruns/download/sequoia.linux2.2">[Download executable]</A></LI>
+version 0.9.6 
+
+<LI>SGI IRIX5.3 <A HREF="http://www.scripps.edu/~bruns/download/sequoia.irix5.3">[Download executable]</A></LI>
+version 0.9.6 
+
+<LI>SGI IRIX6.5 <A HREF="http://www.scripps.edu/~bruns/download/sequoia.irix6.5">[Download executable]</A></LI>
+version 0.9.6 
+
+<LI>SunOS 5.6<A HREF="http://www.scripps.edu/~bruns/download/sequoia.sun5.6">[Download executable]</A></LI>
+version 0.9.6
+
+<LI>MSDOS/WindowsXX<A HREF="http://www.scripps.edu/~bruns/download/SEQUOIA.EXE">[Download executable]</A></LI>
+version 0.9.6
+
+</UL>
+
+<P>
+The latest version of this document is available at 
+<A HREF="http://www.scripps.edu/~bruns/sequoia.html">
+http://www.scripps.edu/~bruns/sequoia.html</A>
+
+<HR>
+
+<LINK REV="owns" TITLE="Christopher M. Bruns Ph.D."
+HREF="mailto:bruns@scripps.edu">
+<LINK REV="made" TITLE="Christopher M. Bruns Ph.D."
+HREF="mailto:bruns@scripps.edu">
+
+<HTML>
+<BODY>
+
+<HR>
+
+<P>
+<ADDRESS><A HREF="http://www.scripps.edu/~bruns/">
+  <IMG SRC="http://www.scripps.edu/~bruns/images/cmbicon.gif" ALT="[portrait]"
+  ALIGN=CENTER HEIGHT=30 WIDTH=30>
+  Chris Bruns' home page
+</A> /
+<A HREF="http://www.scripps.edu/">
+  <IMG SRC="http://www.scripps.edu/~bruns/images/tsriicon.gif" ALT="[Scripps logo]"
+  ALIGN=CENTER HEIGHT=30 WIDTH=30>
+  TSRI main page
+</A> /
+<A HREF="mailto:bruns@scripps.edu">
+  <IMG SRC="http://www.scripps.edu/~bruns/images/mail_30.gif" ALT="[Mail icon]"
+  ALIGN=CENTER HEIGHT=30 WIDTH=30>
+  bruns@scripps.edu
+</A></ADDRESS>
+
+<P>
+All images, text, and content are the sole property of 
+Chris Bruns, and are &copy; Chris Bruns. 
+All rights reserved.
+</P>
+
+<HR>
+
+</BODY>
+</HTML>
+

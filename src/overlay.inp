@@ -1,0 +1,16 @@
+#
+set echo 1
+read struct1 fnr946.pdb
+read struct2 anabaena.nadp.pdb
+overlay
+overlay
+set struct1 overlay
+read struct2 x35f.pdb
+overlay
+overlay
+set struct1 overlay
+read struct2 b5r.pdb
+overlay
+overlay
+print align
+#

@@ -1,0 +1,6 @@
+read struct1 fnr946ca.pdb
+read struct2 x35fca.pdb
+set useangle 1
+overlay
+write overlay temp.pdb
+
