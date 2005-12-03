@@ -39,7 +39,8 @@ int main()
   myoshook(status_os);
 
   int license_status;
-  if ((license_status = timed_license()))
+  // if ((license_status = timed_license()))
+  if (0)
     {
       if (license_status == 1)
         {

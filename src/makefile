@@ -3,25 +3,25 @@ CFLAGS1 = -DVERSION=\"$(VERSION)\"
 
 # linux
 # compile on baxter
-#RM = /bin/rm -f
-#CC = gcc
-#C++ = g++
-##CFLAGS = $(CFLAGS1) -b i486-linuxaout -g -Wall
-#CFLAGS = $(CFLAGS1) -g -O3 -Wall -static
-#LIBS = -lreadline -lncurses
-#XLIBS = -L /usr/X11/lib -lXm -lXt -lX11 -lXext -lstdc++ -lreadline -lcurses -lm
-#LD = gcc
+RM = /bin/rm -f
+CC = gcc
+C++ = g++
+#CFLAGS = $(CFLAGS1) -b i486-linuxaout -g -Wall
+CFLAGS = $(CFLAGS1) -g -O3 -Wall -static
+LIBS = -lreadline -lncurses
+XLIBS = -L /usr/X11/lib -lXm -lXt -lX11 -lXext -lstdc++ -lreadline -lcurses -lm
+LD = gcc
 
 # OSF1 V4.0
 # compile on castle
 # # [compile on alf1.mrc-lmb.cam.ac.uk]
-RM = /bin/rm -f
-CC = gcc
-C++ = g++
-CFLAGS = $(CFLAGS1) -g -Wall -static -I/u/binf/cbruns/devel/include -L/u/binf/cbruns/devel/lib
-LIBS = -lreadline -lcurses
-LIBS = -lXm -lXt -lX11 -lXext -lstdc++ -lreadline -lcurses -lm
-LD = gcc
+# RM = /bin/rm -f
+# CC = gcc
+# C++ = g++
+# CFLAGS = $(CFLAGS1) -g -Wall -static -I/u/binf/cbruns/devel/include -L/u/binf/cbruns/devel/lib
+# LIBS = -lreadline -lcurses
+# LIBS = -lXm -lXt -lX11 -lXext -lstdc++ -lreadline -lcurses -lm
+# LD = gcc
 
 ## SunOS5.6
 ## compile on spicerack
