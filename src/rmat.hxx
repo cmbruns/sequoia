@@ -15,15 +15,28 @@
 //
 
 // #include <math.h>
+#ifndef MAC_OS_X
 #include <values.h> // maybe SUN only? for unit roundoff calculation
+#else
+#include <limits.h>
+#include <float.h>
+#endif
 
 // djgpp has no FSIGNIF in values.h, so try this
 #ifndef FSIGNIF
-#ifndef FLT_MANT_DIG
-#define FSIGNIF     (FLOATBITS  - _FEXPLEN + _HIDDENBIT - 1)
-#else
+#ifdef FLT_MANT_DIG
 #define FSIGNIF FLT_MANT_DIG
 #endif
+#endif
+
+#ifndef FSIGNIF
+#ifdef FLOATBITS
+#define FSIGNIF     (FLOATBITS  - _FEXPLEN + _HIDDENBIT - 1)
+#endif
+#endif
+
+#ifndef FSIGNIF
+#define FSIGNIF     (BITS(float)  - _FEXPLEN + _HIDDENBIT - 1)
 #endif
 
 #include "matrix.hxx"

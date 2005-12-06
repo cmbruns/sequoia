@@ -1,16 +1,27 @@
 VERSION = 0.9.9
 CFLAGS1 = -DVERSION=\"$(VERSION)\"
 
-# linux
-# compile on baxter
+# Mac OS X Tiger
+# compile on koobi
 RM = /bin/rm -f
-CC = gcc
-C++ = g++
+CC = gcc-3.3
+C++ = g++-3.3
 #CFLAGS = $(CFLAGS1) -b i486-linuxaout -g -Wall
-CFLAGS = $(CFLAGS1) -g -O3 -Wall -static
+CFLAGS = $(CFLAGS1) -g -O3 -Wall -DMAC_OS_X=1
 LIBS = -lreadline -lncurses
 XLIBS = -L /usr/X11/lib -lXm -lXt -lX11 -lXext -lstdc++ -lreadline -lcurses -lm
-LD = gcc
+LD = gcc-3.3
+
+# linux
+# compile on baxter
+# RM = /bin/rm -f
+# CC = gcc
+# C++ = g++
+# #CFLAGS = $(CFLAGS1) -b i486-linuxaout -g -Wall
+# CFLAGS = $(CFLAGS1) -g -O3 -Wall -static
+# LIBS = -lreadline -lncurses
+# XLIBS = -L /usr/X11/lib -lXm -lXt -lX11 -lXext -lstdc++ -lreadline -lcurses -lm
+# LD = gcc
 
 # OSF1 V4.0
 # compile on castle
