@@ -32,7 +32,7 @@ int main()
   status_os << "\nSEQUOIA multiple sequence alignment tool\n";
   status_os << "version " << VERSION << "\n";
   status_os << "compiled on " << timestamp << "\n";
-  status_os << "copyright (c) 1995-2003\nby Chris Bruns, Ph.D.\n";
+  status_os << "copyright (c) 1995-2005\nby Chris Bruns, Ph.D.\n";
   status_os << "All rights reserved\n";
   status_os << "\n*** Please see http://bruns.homeip.net/~bruns/scripps/sequoia.html for ***\n";
   status_os << "*** proper citation information. ***\n\n";

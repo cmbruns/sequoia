@@ -8,7 +8,7 @@ CC = gcc-3.3
 C++ = g++-3.3
 #CFLAGS = $(CFLAGS1) -b i486-linuxaout -g -Wall
 CFLAGS = $(CFLAGS1) -O3 -g -Wall -DMAC_OS_X=1
-LIBS = -lstaticreadline -lncurses
+LIBS = -lstaticreadline -lncurses.5
 XLIBS = -L /usr/X11/lib -lXm -lXt -lX11 -lXext -lstdc++ -lreadline -lcurses -lm
 LD = gcc-3.3
 
