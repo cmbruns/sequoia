@@ -23,10 +23,11 @@ extern "C" {
 }
 #include<iostream>
 
-// expire on December 1, 2005
+// expire on December 1, 2010
+// but not, because this feature is deactivated
 #define START_YEAR 2000
 #define START_MONTH 1
-#define END_YEAR 2005
+#define END_YEAR 2010
 #define END_MONTH 11
 
 int timed_license();

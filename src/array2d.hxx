@@ -25,7 +25,7 @@ public:
   void init_2darray(uint r, uint c);
   void init_2darray(uint r, uint c, Type val);
 
-  uint m() const {return dim();}
+  uint m() const {return this->dim();}
   uint n() const 
     {
       if (!m()) return 0;

@@ -18,7 +18,7 @@ extern "C"
 #include <unistd.h> // gettimeofday()
 }
 // Sun5 does not have random()
-#ifdef sun5
+#ifdef NO_RANDOM
 #define RANDOM rand
 #define SRANDOM srand
 #else
@@ -41,10 +41,15 @@ void quicksort(Type * inarray, int size, int * order = NULL)
   static bool have_seed = false;
   if (!have_seed)
     {
-      struct timeval tv;
-      struct timezone tz;
-      gettimeofday(&tv, &tz);
-      SRANDOM(tv.tv_sec);
+      // struct timeval tv;
+      // struct timezone tz;
+      // gettimeofday(&tv, &tz);
+      // SRANDOM(tv.tv_sec);
+
+      time_t rawtime = time(NULL);
+      unsigned int seed = (unsigned int) rawtime;
+      SRANDOM(seed);
+
       have_seed = true;
     }
   int top = size - 1; // highest unsorted element of array

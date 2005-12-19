@@ -15,12 +15,13 @@
 //
 
 // #include <math.h>
-#ifndef MAC_OS_X
-#include <values.h> // maybe SUN only? for unit roundoff calculation
-#else
+#ifdef MAC_OS_X
 #include <limits.h>
-#include <float.h>
+#else
+#include <values.h> // maybe SUN only? for unit roundoff calculation
 #endif
+
+#include <float.h>
 
 // djgpp has no FSIGNIF in values.h, so try this
 #ifndef FSIGNIF

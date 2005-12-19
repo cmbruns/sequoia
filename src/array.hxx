@@ -34,10 +34,10 @@ class Abstract_array  // abstract container base class
 private:
   uint array_dim; // actual size used
   uint rep_dim; // size of representation array
-  Type * element;
   void Abstract_array<Type>::initialize_internals();
-  uint check(uint n) const; // for use in bounds checking
 protected:
+  uint check(uint n) const; // for use in bounds checking
+  Type * element;
   void init_array(uint n);
   void init_array(uint n, Type val);
   const Type * array_ptr() const {return element;}
@@ -66,18 +66,6 @@ public:
   void deletelast() {if (array_dim > 0) --array_dim;}
   void clear_array() {init_array(0);}
 };
-
-
-// Start array indices at 1 (rather than zero)
-template<class T>
-class One_Array : public Abstract_array<T>
-{
-protected:
-public:
-	T& operator[](uint i) const {return element[--i];}
-	T& operator()(uint i) const {return element[check(--i)];}
-};
-
 
 
 template<class T>

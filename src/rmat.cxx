@@ -36,7 +36,7 @@ RMat operator*(double r, const RMat & M)
 
 RMat RMat::sym_eigen() const
 {
-  uint r = MIN(m(), n());
+  uint r = MIN(this->m(), this->n());
   RMat answer (r+1, r);
   RMat Q = eye(r);
   //  cerr << 2 << ", " << 1 - FSIGNIF << endl;

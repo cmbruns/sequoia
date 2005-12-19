@@ -28,7 +28,7 @@ Vector<Type> Vector<Type>::operator-() const
   const Vector<Type> & v = *this;
   Vector<Type> neg = v;
   uint i;
-  for (i = 0; i < dim(); ++i)
+  for (i = 0; i < this->dim(); ++i)
     neg[i] = - neg[i];
   return neg; 
 }
@@ -51,10 +51,10 @@ template<class Type>
 Vector<Type> & Vector<Type>::operator-=(const Vector<Type> & v2)
 {
   Vector<Type> & v = *this;
-  if (dim() != v2.dim())
-    error("Vector self-subtraction size mismatch");
+  if (this->dim() != v2.dim())
+    this->error("Vector self-subtraction size mismatch");
   uint i;
-  for (i = 0; i < dim(); ++i)
+  for (i = 0; i < this->dim(); ++i)
     v[i] -= v2[i];
   return *this; 
 }
@@ -112,13 +112,13 @@ template<class Type>
 Vector<Type> & Vector<Type>::operator+=(const Vector<Type> & v2)
 {
   Vector<Type> & v = *this;
-  if (dim() != v2.dim())
+  if (this->dim() != v2.dim())
     {
       v[300000000] = v2[0];
-      error("Vector self-addition size mismatch");
+      this->error("Vector self-addition size mismatch");
     }
   uint i;
-  for (i = 0; i < dim(); ++i)
+  for (i = 0; i < this->dim(); ++i)
     v[i] += v2[i];
   return *this; 
 }
@@ -128,9 +128,9 @@ template<class Type>
 Vector<Type> Vector<Type>::operator/(Real r) const
 {
   const Vector<Type> & v = *this;
-  Vector<Type> prod (dim());
+  Vector<Type> prod (this->dim());
   uint i;
-  for (i = 0; i < dim(); ++i) 
+  for (i = 0; i < this->dim(); ++i) 
     prod[i] = (Type)(v[i] / r);
   return prod; 
 }
@@ -141,7 +141,7 @@ Vector<Type> & Vector<Type>::operator/=(Real r)
 {
   Vector<Type> & v = *this;
   uint i;
-  for (i = 0; i < dim(); ++i)
+  for (i = 0; i < this->dim(); ++i)
     v[i] = (Type) (v[i] / r);
   return *this; 
 }

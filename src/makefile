@@ -1,16 +1,26 @@
 VERSION = 0.9.9a
 CFLAGS1 = -DVERSION=\"$(VERSION)\"
 
+# ms-dos/cygwin
+# compile on xps
+RM = /bin/rm -f
+CC = gcc
+C++ = g++
+#CFLAGS = $(CFLAGS1) -s -O5 -Wall -fguiding-decls
+CFLAGS = $(CFLAGS1) -s -O5 -Wall -static -mno-cygwin -I/usr/local/no_cygwin/include -DNO_RANDOM -DREADLINE_STATIC
+LIBS = -L/usr/local/no_cygwin/lib -lreadline -lhistory -lgw32c -lole32 -luuid -lwsock32 -lm
+LD = gcc
+
 # Mac OS X Tiger
 # compile on koobi
-RM = /bin/rm -f
-CC = gcc-3.3
-C++ = g++-3.3
-#CFLAGS = $(CFLAGS1) -b i486-linuxaout -g -Wall
-CFLAGS = $(CFLAGS1) -O3 -g -Wall -DMAC_OS_X=1
-LIBS = -lstaticreadline -lncurses.5
-XLIBS = -L /usr/X11/lib -lXm -lXt -lX11 -lXext -lstdc++ -lreadline -lcurses -lm
-LD = gcc-3.3
+# RM = /bin/rm -f
+# CC = gcc-3.3
+# C++ = g++-3.3
+# #CFLAGS = $(CFLAGS1) -b i486-linuxaout -g -Wall
+# CFLAGS = $(CFLAGS1) -O3 -g -Wall -DMAC_OS_X=1
+# LIBS = -lstaticreadline -lncurses.5
+# XLIBS = -L /usr/X11/lib -lXm -lXt -lX11 -lXext -lstdc++ -lreadline -lcurses -lm
+# LD = gcc-3.3
 
 # linux
 # compile on baxter
@@ -37,7 +47,7 @@ LD = gcc-3.3
 ## SunOS5.6
 ## compile on spicerack
 #RM = /bin/rm -f
-#CFLAGS = $(CFLAGS1) -s -O2 -fguiding-decls -I /tools/gnu/include/ -L /tools/gnu/lib/ -DNO_READLINE_HISTORY
+#CFLAGS = $(CFLAGS1) -s -O2 -fguiding-decls -I /tools/gnu/include/ -L /tools/gnu/lib/ -DNO_READLINE_HISTORY -DNO_RANDOM
 #XLIBS = -lsocket -lnsl -lw -ldl -lstdc++ -lXm -lXt -lX11 -lXext -lm
 #LIBS = -lstdc++ -lreadline -lcurses -lm
 #CC = gcc

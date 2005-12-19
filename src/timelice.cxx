@@ -12,10 +12,13 @@
 // Only allow operation of program on a range of dates
 int timed_license()
 {
-  struct timeval tv;
-  if (gettimeofday(&tv, NULL)) return 666;
+  return 0; // always permit execution
 
-  time_t ltarg = tv.tv_sec;
+  // struct timeval tv;
+  // if (gettimeofday(&tv, NULL)) return 666; // does not work on windows
+  // time_t ltarg = tv.tv_sec;
+
+  time_t ltarg = time(NULL);
   struct tm * ltp;
   ltp = localtime(&ltarg);
 

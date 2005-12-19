@@ -57,7 +57,7 @@ public:
 
   void print( ostream& os ) const;
   
-  uint m() const {return dim();}
+  uint m() const {return this->dim();}
   uint n() const 
     {
       if (!m()) return 0;
