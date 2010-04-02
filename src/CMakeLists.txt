@@ -1,5 +1,5 @@
 
-set(VERSION "0.9.9a")
+set(VERSION "1.0.0")
 add_definitions("-DVERSION=\"${VERSION}\"")
 
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
@@ -49,7 +49,10 @@ if(READLINE_INCLUDE_DIR)
     include_directories(${READLINE_INCLUDE_DIR})
 endif()
 add_definitions("-DREADLINE_STATIC")
-
+find_library(NCURSES_LIBRARY ncurses)
+if(NCURSES_LIBRARY)
+    set(LIBS ${LIBS} ${NCURSES_LIBRARY})
+endif()
 
 
 add_executable(sequoia ${CK_SRCS} ${CK_HDRS})
@@ -80,3 +83,4 @@ configure_file(timestamp.h.in ${CMAKE_CURRENT_BINARY_DIR}/timestmp.h @ONLY)
 add_executable(vartest vartest.cxx ${BOTH_SRCS} oshook.cxx)
 target_link_libraries(vartest ${LIBS})
 add_test(vartest vartest)
+

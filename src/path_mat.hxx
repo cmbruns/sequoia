@@ -127,7 +127,7 @@ public:
   void stabulate(const pdboverlay & p1, const pdboverlay & p2);
   double res_3dscore(const SeqRes & r1, const SeqRes & r2);
   Alignment dyn_prog();
-  MATRIX_TYPE Score_matrix::randomize();
+  MATRIX_TYPE randomize();
   MATRIX_TYPE max_score(uint & im, uint & jm);
   ostream & outsubmat(ostream & os, const Score_matrix & s, int x1, int y1, int x2, int y2);
 

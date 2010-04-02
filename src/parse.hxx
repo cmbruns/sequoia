@@ -86,7 +86,7 @@ public:
   istream * infile;
   ostream * outfile;
 
-  int command_token::evaluate_expression(ostream & os); // SET something
+  int evaluate_expression(ostream & os); // SET something
   
   // Prototypes for token action functions
   // 

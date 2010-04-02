@@ -32,7 +32,7 @@ class Abstract_array  // abstract container base class
 private:
   uint array_dim; // actual size used
   uint rep_dim; // size of representation array
-  void Abstract_array<Type>::initialize_internals();
+  void initialize_internals();
 protected:
   uint check(uint n) const; // for use in bounds checking
   Type * element;
@@ -42,11 +42,11 @@ protected:
   Type * array_ptr() {return element;}
   void error(const char * msg) const;
 public:
-  Abstract_array<Type>(void) {initialize_internals();}
-  Abstract_array<Type>(uint n) {initialize_internals(); init_array(n);}
-  Abstract_array<Type>(uint n, Type val) {initialize_internals(); init_array(n, val);}
-  Abstract_array<Type>(const Type * pn, uint n);
-  Abstract_array<Type>(const Abstract_array<Type> & a);
+  Abstract_array(void) {initialize_internals();}
+  Abstract_array(uint n) {initialize_internals(); init_array(n);}
+  Abstract_array(uint n, Type val) {initialize_internals(); init_array(n, val);}
+  Abstract_array(const Type * pn, uint n);
+  Abstract_array(const Abstract_array & a);
   virtual ~Abstract_array();
 
   const Type & operator[](uint i) const {return element[i];}
@@ -54,11 +54,11 @@ public:
   const Type &  operator()(uint i) const {return element[i];}
   Type &  operator()(uint i) {return element[i];}
   subArray<Type> sub(uint i, uint j);
-  const Abstract_array<Type> sub(uint i, uint j) const;
+  const Abstract_array sub(uint i, uint j) const;
 
-  virtual Abstract_array<Type> & operator=(const Abstract_array<Type> & a);
-  Abstract_array<Type> & operator+=(const Abstract_array<Type> & a);
-  virtual Abstract_array<Type> & operator+=(const Type & a);
+  virtual Abstract_array & operator=(const Abstract_array & a);
+  Abstract_array & operator+=(const Abstract_array & a);
+  virtual Abstract_array & operator+=(const Type & a);
 
   uint dim() const {return array_dim;}
   void deletelast() {if (array_dim > 0) --array_dim;}
@@ -88,7 +88,7 @@ private:
   uint offset;
   subArray() {parent = NULL; subarray_dim = 0; offset = 0;}
 public:
-  subArray<Type> & operator=(const Abstract_array<Type> & a);
+  subArray & operator=(const Abstract_array<Type> & a);
   ~subArray() {}
 };
 

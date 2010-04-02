@@ -436,7 +436,7 @@ int cli::parse_and_run(const char * buffline, ostream & os)
       al_ptr = NULL;
       str_ptr = NULL;
       Mystring job = "mystery";
-      ostream * destination = & os;
+      std::ostream * destination = & os;
       // No arguments?, just print ALIGN then
       if (tokens.dim() <= next_tok)
 	{al_ptr = & align[0]; job = "pretty"; destination = & os;}

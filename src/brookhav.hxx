@@ -155,5 +155,6 @@ public:
 };
 
 int get_one_record(istream & is, pdbprotein & p);
+ostream& operator<<(ostream&os, const pdboverlay& ov);
 
 #endif

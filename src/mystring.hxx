@@ -66,7 +66,7 @@ public:
 
   friend ostream & operator<<(ostream & os, const Mystring & s);
   friend istream & operator>>(istream & is, Mystring & s);
-  Array<Mystring> Mystring::split(char delim = ' ') const;
+  Array<Mystring> split(char delim = ' ') const;
 };
 
 Mystring upcase(const Mystring & s);
