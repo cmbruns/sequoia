@@ -11,6 +11,10 @@
 // Added cvs tags
 //
 
+#include <iostream>
+
+using namespace std;
+
 template <class Type>
 void Abstract_array<Type>::initialize_internals()
 {

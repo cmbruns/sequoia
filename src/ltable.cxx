@@ -10,6 +10,7 @@
 
 #include "ltable.hxx"
 #include "rmat.hxx"
+#include "MSVC_erfc.h"
 
 /* probability of a z-score greater than x */
 double zprob(double x)

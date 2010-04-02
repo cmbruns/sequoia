@@ -112,7 +112,7 @@ double fast_cos_angle(const RMat & o1, const RMat & o2)
 {
   double answer = 0;
   Vector3D a, b;
-  float len2[3];
+  double len2[3];
   Vector3D rotaxis;
   RMat I(3);
   RMat Iprime(3);

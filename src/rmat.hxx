@@ -15,11 +15,11 @@
 //
 
 // #include <math.h>
-#ifdef MAC_OS_X
+// #ifdef MAC_OS_X
 #include <limits.h>
-#else
-#include <values.h> // maybe SUN only? for unit roundoff calculation
-#endif
+// #else
+// #include <values.h> // maybe SUN only? for unit roundoff calculation
+// #endif
 
 #include <float.h>
 

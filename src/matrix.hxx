@@ -80,7 +80,7 @@ public:
   Matrix<Type> T() const; // transpose
   Type mean() const;
   Type std_dev() const;
-  Type sum();
+//  Type sum();
   const Vector<Type> diag() const;
 };
 

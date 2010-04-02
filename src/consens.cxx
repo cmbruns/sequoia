@@ -11,7 +11,7 @@
 // Generate a consensus sequence from an alignment
 Sequence consensus(const Alignment & a, 
 		   const Comparison_matrix & cm, 
-		   float cutoff)
+		   double cutoff)
 {
   Sequence answer;
   double aa_score[256];
@@ -23,8 +23,8 @@ Sequence consensus(const Alignment & a,
       for (rnum=0; rnum < answer.length(); ++rnum)
 	{
 	  char rtype;
-	  float are_gaps = 0;
-	  float non_gaps = 0;
+	  double are_gaps = 0;
+	  double non_gaps = 0;
 	  // for each amino acid type
 	  for (rtype = 'A'; rtype <= 'Z'; ++rtype)
 	    aa_score[rtype] = 0;

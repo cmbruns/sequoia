@@ -849,7 +849,7 @@ int cli::parse_and_run(const char * buffline, ostream & os)
 	    }
 	  else 
 	    {
-	      float diffangle = r1.orientation().angle(r2.orientation());
+	      double diffangle = r1.orientation().angle(r2.orientation());
 	      os << setw(8);
 	      os << setiosflags(ios::fixed);
 	      os << diffangle * 180 / PI;

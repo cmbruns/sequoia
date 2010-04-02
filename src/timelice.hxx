@@ -18,9 +18,13 @@
 // Added cvs tags
 //
 
+#ifdef _MSC_VER
+#include <winsock.h>
+#else
 extern "C" {
 #include <sys/time.h>
 }
+#endif
 #include<iostream>
 
 // expire on December 1, 2010

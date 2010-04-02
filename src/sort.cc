@@ -14,9 +14,18 @@ extern "C"
 {
 #include <stdlib.h> // random() on linux
 #include <math.h> // random() on sgi
+}
+#ifdef _MSC_VER
+#include <winsock.h>
+#include <time.h>
+#define NO_RANDOM
+#else
+extern "C"
+{
 #include <sys/time.h> // gettimeofday()
 #include <unistd.h> // gettimeofday()
 }
+#endif
 // Sun5 does not have random()
 #ifdef NO_RANDOM
 #define RANDOM rand
@@ -33,7 +42,7 @@ extern "C"
 // "Type" must have "=", ">", and "==" operators defined
 
 template <class Type>
-void quicksort(Type * inarray, int size, int * order = NULL)
+void quicksort(Type * inarray, int size, int * order)
 {
   if (size <= 1) return;
 

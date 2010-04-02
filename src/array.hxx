@@ -14,8 +14,6 @@
 // Removed ^M characters
 //
 
-using namespace std;
-
 #include <iostream>
 // exit()...
 #ifdef IRIX

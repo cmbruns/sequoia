@@ -256,7 +256,7 @@ ostream & operator<<(ostream & os, const Sequence & s)
 
 istream & operator>>(istream & is, Sequence & s)
 {
-  uchar c;
+  uchar c(' ');
   char buffer[2001];
   SeqRes sr;
 

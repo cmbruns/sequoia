@@ -24,6 +24,7 @@
 //
 
 #include <iostream>
+using namespace std;
 
 // extern "C" {
 #include <ctype.h>

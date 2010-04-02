@@ -13,6 +13,6 @@
 
 Sequence consensus(const Alignment & a, 
 		   const Comparison_matrix & cm, 
-		   float cutoff);
+		   double cutoff);
 
 #endif

@@ -1,4 +1,4 @@
-#include <iostream.h>
+#include <iostream>
 #include "parse.hxx"
 #include "variable.hxx"
 
@@ -10,11 +10,15 @@
 // Added cvs tags
 //
 
-main()
+cli cmd_line("vartest> ");
+
+int main()
 {
   cout << "Hello world\n";
   assign_variable("phlerb", 3);
   sequoia_variable * vp = sq_var_ptr("phlerb");
   if (vp == NULL) cout << "NULL\n";
   else cout << vp->value() << "\n";
+
+  return 0;
 }

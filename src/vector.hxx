@@ -22,8 +22,11 @@
 //
 
 #include <math.h>
+#include <iostream>
 
 #include "array.hxx"
+
+using namespace std;
 
 template<class Type>
 class row_vector;

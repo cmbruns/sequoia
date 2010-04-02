@@ -347,7 +347,7 @@ double RMat::angle(const RMat & m2) const // angle between two rotation matrices
   const RMat & m1 = *this;
   double answer = 0;
   Vector3D a, b;
-  float len[3];
+  double len[3];
   Vector3D rotaxis;
   RMat I(3);
   RMat Iprime(3);
@@ -402,7 +402,7 @@ double RMat::angle2(const RMat & m2) const // angle between two rotation matrice
   const RMat & m1 = *this;
   double answer = 0;
   Vector3D a, b;
-  float len[3];
+  double len[3];
   Vector3D rotaxis;
   RMat I(3);
   RMat Iprime(3);

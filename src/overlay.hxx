@@ -33,7 +33,7 @@ public:
 // Use Kabsch method
 RMat overlay(const Array<RVec> & X, 
 	     const Array<RVec> & Y, 
-	     const Array<Real> & w) throw(ill_conditioned_rotation_error);
+	     const Array<Real> & w);
 // find transformation
 RMat overlay(const pdbprotein & p1, 
 		  const pdbprotein & p2, 
@@ -41,7 +41,7 @@ RMat overlay(const pdbprotein & p1,
 RMat overlay(const pdboverlay & o1, 
 		  const pdboverlay & o2, 
 		  const Alignment & a);
-RMat overlay(const SeqRes & r1, const SeqRes & r2) throw(ill_conditioned_rotation_error);
+RMat overlay(const SeqRes & r1, const SeqRes & r2);
 // reassign capital letters
 Alignment struct_equiv(const pdbprotein & p1, 
 		       const pdbprotein & p2,

@@ -1,6 +1,10 @@
 #ifndef COMP_MAT_HXX
 #define COMP_MAT_HXX
 
+#ifdef _MSC_VER
+#pragma warning(disable : 4996)
+#endif
+
 // $Id: comp_mat.hxx,v 1.2 2001/11/28 23:08:17 bruns Exp $
 // $Header: /usr/data/cvs/sequoia1/comp_mat.hxx,v 1.2 2001/11/28 23:08:17 bruns Exp $
 // $Log: comp_mat.hxx,v $

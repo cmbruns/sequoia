@@ -15,8 +15,6 @@
 // Removed ^M characters
 //
 
-using namespace std;
-
 #ifdef USE_BUFFERED_OUTPUT
 
 #include <sstream>
@@ -31,6 +29,7 @@ ostrstream & myoshook(ostrstream & os);
 #else
 
 #include <iostream>
+using namespace std;
 
 extern ostream & status_os;
 ostream & myoshook(ostream & os);

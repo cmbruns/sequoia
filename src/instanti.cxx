@@ -1,5 +1,3 @@
-#ifdef __GNUC__
-
 // $Id: instanti.cxx,v 1.4 2002/06/28 17:21:54 bruns Exp $
 // $Header: /usr/data/cvs/sequoia1/instanti.cxx,v 1.4 2002/06/28 17:21:54 bruns Exp $
 // $Log: instanti.cxx,v $
@@ -18,6 +16,8 @@
 // Added cvs header tags
 // Removed ^M characters
 //
+
+#if defined(__GNUC__) || defined(_MSC_VER)
 
 #include "cmbmacro.cxx"
 // template uint MIN(const uint &, const uint &);

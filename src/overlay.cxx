@@ -1,5 +1,6 @@
 #include "overlay.hxx"
 #include "sort.h"
+#include <vector>
 
 // $Id: overlay.cxx,v 1.3 2002/02/19 18:40:16 bruns Exp $
 // $Header: /usr/data/cvs/sequoia1/overlay.cxx,v 1.3 2002/02/19 18:40:16 bruns Exp $
@@ -29,7 +30,7 @@
 // Return zero matrix if not well-conditioned
 RMat overlay(const Array<RVec> & X, const Array<RVec> & Y, const
 	       Array<Real> & w) 
-  throw(ill_conditioned_rotation_error)
+//   throw(ill_conditioned_rotation_error)
 {
   if (X.dim() < 1) 
     {
@@ -69,16 +70,19 @@ RMat overlay(const Array<RVec> & X, const Array<RVec> & Y, const
   RMat a1 = spd.sym_eigen(); // returns eigenvalues and eigenvectors
 
   // sort eigenvalues in increasing order
-  int order[space];
-  Real mu1[space]; // sorted eigenvalues, increasing
+  // int order[space];
+  std::vector<int> order(space);
+  // Real mu1[space]; // sorted eigenvalues, increasing
+  std::vector<Real> mu1(space);
   for (i = 0; i < space; ++i) 
     {
       order[i] = i;
       mu1[i] = a1[space][i];
     }
-  quicksort(mu1, space, order);
+  quicksort(&mu1[0], space, &order[0]);
 
-  Real mu[space]; // sorted eigenvalues, decreasing
+  // Real mu[space]; // sorted eigenvalues, decreasing
+  std::vector<Real> mu(space);
   RMat a = a1;
   for (i = 0; i < space; ++i)
     {
@@ -185,7 +189,7 @@ RMat overlay(const Array<RVec> & X, const Array<RVec> & Y, const
 
 // Matrix to transform residue2 onto residue1
 RMat overlay(const SeqRes & r1, const SeqRes & r2)
-  throw(ill_conditioned_rotation_error)
+//  throw(ill_conditioned_rotation_error)
 {
   Array<RVec> v1, v2;
   Array<Real> w;
@@ -223,7 +227,7 @@ RMat overlay(const SeqRes & r1, const SeqRes & r2)
       throw ill_conditioned_rotation_error(r1);
     }
   answer = overlay(v2, v1, w);
-  float determinant = answer.strip_trans().determinant();
+  double determinant = answer.strip_trans().determinant();
   if (determinant < 0.9 || determinant > 1.1) {
     throw ill_conditioned_rotation_error(r1);
   }

@@ -33,6 +33,7 @@
 // Removed ^M characters
 //
 
+#include <vector>
 #include <iomanip>
 #include "array.hxx"
 #include "mystring.hxx"
@@ -707,7 +708,8 @@ int command_token::optimize(ostream & os) // OPTIMIZE
 	}
 
       // randomize selection of residues
-      int random_order[cmd_line.align[0].n_seq()];
+      // int random_order[cmd_line.align[0].n_seq()];
+      std::vector<int> random_order(cmd_line.align[0].n_seq());
       unsigned int i;
       // start with a definite order
       for (i = 0; i < cmd_line.align[0].n_seq(); ++i)
@@ -880,7 +882,7 @@ int command_token::print_sequence_file(ostream & os) // PRINT
 	    }
 	  else 
 	    {
-	      float diffangle = r1.orientation().angle(r2.orientation());
+	      double diffangle = r1.orientation().angle(r2.orientation());
 	      os << setw(8);
 	      os << setiosflags(ios::fixed);
 	      os << diffangle * 180 / PI;
@@ -1123,7 +1125,8 @@ int command_token::random(ostream & os) // RANDOM
     if (min_score > rscores[i]) min_score = rscores[i];
   }
   uint n_bins = 15;
-  int score_bins[n_bins];
+  // int score_bins[n_bins];
+  std::vector<int> score_bins(n_bins);
   for (i=0; i<n_bins; ++i) score_bins[i] = 0;
   int largest_bin_size = 0;
   for(i=0; i < nrand; ++i) {

@@ -20,8 +20,6 @@
 // Removed ^M characters
 //
 
-using namespace std;
-
 #ifdef IRIX
 #include "stdlib.h"
 #else

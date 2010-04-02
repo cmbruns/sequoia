@@ -4,6 +4,10 @@
 #ifndef _BROOKHAV_HXX_
 #define _BROOKHAV_HXX_
 
+#ifdef _MSC_VER
+#pragma warning(disable : 4996)
+#endif
+
 // $Id: brookhav.hxx,v 1.3 2002/06/28 17:21:54 bruns Exp $
 // $Header: /usr/data/cvs/sequoia1/brookhav.hxx,v 1.3 2002/06/28 17:21:54 bruns Exp $
 // $Log: brookhav.hxx,v $
@@ -17,8 +21,6 @@
 // Added cvs header tags
 // Removed ^M characters
 //
-
-using namespace std;
 
 # include <iostream>
 # include <fstream>
@@ -54,8 +56,8 @@ private:
   int residuenumber;
   char insertioncode[2];
   Vector3D coordinate; // orthogonal coordinates
-  float occupancy;
-  float bvalue; // temperature factor
+  double occupancy;
+  double bvalue; // temperature factor
   char footnote[4];
   char segid[5];
   char element[3];
