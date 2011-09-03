@@ -1,7 +1,7 @@
 #ifndef SEQUOIA_TIMESTMP_H_
 #define SEQUOIA_TIMESTMP_H_
 
-char * timestamp = "@DATETIME@ on host '@HOSTNAME@' by user '@BUILD_USER@'";
+const char * timestamp = "@DATETIME@ on host '@HOSTNAME@' by user '@BUILD_USER@'";
 
 #endif
 

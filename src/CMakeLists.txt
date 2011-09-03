@@ -35,7 +35,7 @@ set(XCK_HDRS array.hxx array2d.hxx matrix.hxx sequence.hxx
 ### READLINE LIBRARY ###
 ########################
 
-find_library(READLINE_LIBRARY libreadline.a
+find_library(READLINE_LIBRARY libreadline.a readline
     PATHS "C:/Program Files/GnuWin32/lib")
 set(LIBS ${LIBS} ${READLINE_LIBRARY})
 if(MSVC)
@@ -55,8 +55,6 @@ if(NCURSES_LIBRARY)
 endif()
 
 
-add_executable(sequoia ${CK_SRCS} ${CK_HDRS})
-target_link_libraries(sequoia ${LIBS})
 
 set(SEQUOIA_BUILD_XSEQUOIA OFF CACHE BOOL "Whether to build X-windows version of sequoia")
 if(SEQUOIA_BUILD_XSEQUOIA)
@@ -79,6 +77,9 @@ else()
 endif()
 
 configure_file(timestamp.h.in ${CMAKE_CURRENT_BINARY_DIR}/timestmp.h @ONLY)
+
+add_executable(sequoia ${CK_SRCS} ${CK_HDRS} ${CMAKE_CURRENT_BINARY_DIR}/timestmp.h)
+target_link_libraries(sequoia ${LIBS})
 
 add_executable(vartest vartest.cxx ${BOTH_SRCS} oshook.cxx)
 target_link_libraries(vartest ${LIBS})

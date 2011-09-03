@@ -17,6 +17,6 @@
  * Removed ^M characters
  * */
 
-char * rl_gets (char * prompt);
+char * rl_gets (const char * prompt);
 
 #endif

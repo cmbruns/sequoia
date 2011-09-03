@@ -32,9 +32,9 @@ int main()
   status_os << "\nSEQUOIA multiple sequence alignment tool\n";
   status_os << "version " << VERSION << "\n";
   status_os << "compiled on " << timestamp << "\n";
-  status_os << "copyright (c) 1995-2005\nby Chris Bruns, Ph.D.\n";
+  status_os << "copyright (c) 1995-2011\nby Christopher Bruns, Ph.D.\n";
   status_os << "All rights reserved\n";
-  status_os << "\n*** Please see http://bruns.homeip.net/~bruns/sequoia.html for ***\n";
+  status_os << "\n*** Please see http://rotatingpenguin.com/sequoia/ for ***\n";
   status_os << "*** proper citation information. ***\n\n";
   myoshook(status_os);
 
@@ -62,7 +62,7 @@ int main()
   make_command_hierarchy();
 
   // char buffer[2002];
-  char * buffer;
+  const char * buffer;
   while(1)
     {
       status_os << endl;

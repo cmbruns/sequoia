@@ -17,7 +17,7 @@
 static char *line_read = (char *)NULL;
 
 /* Read a string, and return a pointer to it.  Returns NULL on EOF. */
-char * rl_gets (char * prompt)
+char * rl_gets (const char * prompt)
 {
   /* If the buffer has already been allocated, return the memory
      to the free pool. */
