@@ -1,0 +1,7 @@
+read struct1 anabaena.nadp.pdb
+read struct2 fnr946.pdb
+set useangle 1
+overlay
+print align
+overlay 
+print align

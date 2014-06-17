@@ -1,0 +1,166 @@
+
+SEQUOIA multiple sequence alignment tool
+version 0.9.8
+copyright (c) 1995-2002
+by Chris Bruns, Ph.D.
+All rights reserved
+
+*** Please see http://bruns.homeip.net/~bruns/scripps/sequoia.html for ***
+*** proper citation information. ***
+
+
+SEQUOIA> read struct1 fnr946ca.pdb
+Opening file ``fnr946ca.pdb''...
+Read in 1 model(s), with a total of 296 atoms
+Replaced SEQ1
+
+SEQUOIA> read struct2 x35fca.pdb
+Opening file ``x35fca.pdb''...
+Read in 1 model(s), with a total of 321 atoms
+Replaced SEQ2 and OVERLAY
+
+SEQUOIA> set useangle 1
+
+SEQUOIA> overlay
+Superposing STRUCT2 onto STRUCT1
+ALIGN register must be current for overlay to work!
+Running ALIGN, to see if this helps...
+Running TABULATE command...
+Mean residue alignment score = -4.56204e-17 with a standard deviation of 2.09483
+Aligning sequences...
+6 gaps added to make alignment
+Alignment score is 209.012
+Starting RMS deviation is 51.16 for 239 equivalent matches.
+Starting RMS deviation is 51.16 for 239 total matches.
+Transforming STRUCT2...
+calculating rotation matrix...
+Transformation matrix is:
+ -0.382 -0.205  0.901   20.4
+  0.754 -0.632  0.176   25.8
+  0.533  0.747  0.397  -17.2
+   0.00   0.00   0.00   1.00
+
+applying matrix...
+New RMS deviation is 16.5 for 239 equivalent matches.
+New RMS deviation is 16.5 for 239 total matches.
+Reassigning equivalences...
+Total starting equivalences = 239
+Total new equivalences = 12
+Superposing STRUCT2 onto STRUCT1
+Starting RMS deviation is 2.798 for 12 equivalent matches.
+Starting RMS deviation is 16.50 for 239 total matches.
+Transforming STRUCT2...
+calculating rotation matrix...
+Transformation matrix is:
+ -0.482 -0.454  0.749   34.5
+  0.837 -0.492  0.240   18.7
+  0.260  0.742  0.618  -21.6
+   0.00   0.00   0.00   1.00
+
+applying matrix...
+New RMS deviation is 1.04 for 12 equivalent matches.
+New RMS deviation is 17.1 for 239 total matches.
+Reassigning equivalences...
+Total starting equivalences = 12
+Total new equivalences = 52
+Superposing STRUCT2 onto STRUCT1
+Starting RMS deviation is 2.715 for 52 equivalent matches.
+Starting RMS deviation is 17.14 for 239 total matches.
+Transforming STRUCT2...
+calculating rotation matrix...
+Transformation matrix is:
+ -0.519 -0.469  0.714   35.3
+  0.843 -0.417  0.339   13.7
+  0.139  0.778  0.613  -23.3
+   0.00   0.00   0.00   1.00
+
+applying matrix...
+New RMS deviation is 2.07 for 52 equivalent matches.
+New RMS deviation is 17.5 for 239 total matches.
+Reassigning equivalences...
+Total starting equivalences = 52
+Total new equivalences = 67
+Superposing STRUCT2 onto STRUCT1
+Starting RMS deviation is 2.502 for 67 equivalent matches.
+Starting RMS deviation is 17.51 for 239 total matches.
+Transforming STRUCT2...
+calculating rotation matrix...
+Transformation matrix is:
+ -0.536 -0.447  0.716   34.4
+  0.834 -0.410  0.368   13.0
+  0.129  0.795  0.593  -23.9
+   0.00   0.00   0.00   1.00
+
+applying matrix...
+New RMS deviation is 2.48 for 67 equivalent matches.
+New RMS deviation is 17.5 for 239 total matches.
+Reassigning equivalences...
+Total starting equivalences = 67
+Total new equivalences = 69
+Superposing STRUCT2 onto STRUCT1
+Starting RMS deviation is 2.542 for 69 equivalent matches.
+Starting RMS deviation is 17.50 for 239 total matches.
+Transforming STRUCT2...
+calculating rotation matrix...
+Transformation matrix is:
+ -0.555 -0.442  0.705   34.2
+  0.823 -0.413  0.389   12.8
+  0.119  0.796  0.593  -24.0
+   0.00   0.00   0.00   1.00
+
+applying matrix...
+New RMS deviation is 2.51 for 69 equivalent matches.
+New RMS deviation is 17.5 for 239 total matches.
+Reassigning equivalences...
+Total starting equivalences = 69
+Total new equivalences = 59
+Superposing STRUCT2 onto STRUCT1
+Starting RMS deviation is 2.180 for 59 equivalent matches.
+Starting RMS deviation is 17.55 for 239 total matches.
+Transforming STRUCT2...
+calculating rotation matrix...
+Transformation matrix is:
+ -0.563 -0.441  0.699   34.2
+  0.820 -0.406  0.404   12.3
+  0.106  0.801  0.590  -24.1
+   0.00   0.00   0.00   1.00
+
+applying matrix...
+New RMS deviation is 2.18 for 59 equivalent matches.
+New RMS deviation is 17.6 for 239 total matches.
+Reassigning equivalences...
+Total starting equivalences = 59
+Total new equivalences = 59
+Superposing STRUCT2 onto STRUCT1
+Starting RMS deviation is 2.180 for 59 equivalent matches.
+Starting RMS deviation is 17.58 for 239 total matches.
+Transforming STRUCT2...
+calculating rotation matrix...
+Transformation matrix is:
+ -0.563 -0.441  0.699   34.2
+  0.820 -0.406  0.404   12.3
+  0.106  0.801  0.590  -24.1
+   0.00   0.00   0.00   1.00
+
+applying matrix...
+New RMS deviation is 2.18 for 59 equivalent matches.
+New RMS deviation is 17.6 for 239 total matches.
+Equivalences converged in 6 cycles
+Realigning based upon final overlay
+Running STABULATE command...
+*** One or more residues lack a well defined orientation (C-alpha only?) ***
+*** One or more residues lack a well defined orientation (C-alpha only?) ***
+Mean residue alignment score = 0.371 with a standard deviation of 1.20
+Aligning sequences...
+11 gaps added to make alignment
+Alignment score is 1.68e+03
+Reassigning equivalences...
+Total starting equivalences = 222
+Total new equivalences = 181
+
+SEQUOIA> write overlay temp.pdb
+Opening file ...
+
+SEQUOIA> 
+
+SEQUOIA> Program terminated normally

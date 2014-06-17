@@ -1,0 +1,63 @@
+make equivalence command apply to all pairwise comparisons
+permit auto trimming of pdb files for molecular replacement
+keep names of pdb files throughout
+multiple matrices for multiple rigid subdomains
+eliminate parse.o
+eliminate needless functions in path_mat.cxx
+move scoring stuff from path_mat.cxx to ???score.cxx
+need to know to update table when epen and gpen are changed (or do you?)
+IMPLEMENT RICH SEQUENCE FILE FORMAT
+make TRIM command to keep only conserved parts
+make SELECT command to apply to TRIM and SPLIT
+make STRUCT1 part of SEQ1 etc.
+daughter windows should get stopwatches too
+statistics on angular rms as well as distance rms
+residue numbers in strucstats
+molecule name in selection
+fancy numbering in file output (and input)
+euler angles for rotations
+
+- Debug molecule display on satan
+
+- put up stopwatch during file read
+
+- output hinge axis and angle on command
+
+- print more statistics during multiple structure overlays
+
+- include orientation info in equiv
+
+- make "!" things go to X window in X window version 
+
+- consensus of "X" plus "X" is now "a" (should be "X")
+
+- matrix browser for debugging
+
+- carefully check RANDOM command
+
+- put pedantic checking on dimensions of vector/matrix operations
+
+- make all column_attribute, row_attribute calls consistent
+
+- implement print pam etc.
+
+- implement delta statistics in random command
+
+- Sanity checking for which steps have already been performed
+
+- Residue dependent gap penalties
+
+- Permit gaps more easily in places with gaps
+
+- Residue dependent weighting
+
+- Three-way alignments
+
+- Automatic "pileup"-like alignment
+
+- Reorder sequences based upon similarity
+ 
+- Generate phylogenetic trees
+
+- variables and loops
+

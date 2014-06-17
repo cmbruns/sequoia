@@ -1,0 +1,5 @@
+read seq1 test1.seq
+read seq2 test2.seq
+align
+random 100
+
